@@ -3,30 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>共享日程管理系統</title>
+    <title>雙重共享日程系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --main-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --accent-color: #667eea;
+            background: var(--main-gradient);
             min-height: 100vh;
             padding: 20px;
+            transition: background 0.5s ease;
         }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
+        /* 日曆 B 主題色 (藍綠色) */
+        body.calendar-2-mode {
+            --main-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --accent-color: #11998e;
         }
-
+        .container { max-width: 900px; margin: 0 auto; }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--main-gradient);
             border-radius: 15px 15px 0 0;
             padding: 15px 25px;
             display: flex;
@@ -34,380 +32,142 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 15px;
+            transition: background 0.5s ease;
         }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-            font-size: 1.4em;
-            font-weight: bold;
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
+        .logo { display: flex; align-items: center; gap: 10px; color: white; font-size: 1.4em; font-weight: bold; }
+        .nav-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .nav-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 0.95em;
-            transition: all 0.3s;
+            background: rgba(255,255,255,0.2); color: white; border: none;
+            padding: 10px 20px; border-radius: 25px; cursor: pointer;
+            font-size: 0.95em; transition: all 0.3s;
         }
-
-        .nav-btn:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-2px);
-        }
-
-        .today-btn {
-            background: #27ae60;
-        }
-
-        .current-month {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: white;
-            min-width: 130px;
-            text-align: center;
-        }
-
-        .calendar {
-            background: white;
-            border-radius: 0 0 20px 20px;
-            padding: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-
-        .weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin-bottom: 5px;
-        }
-
-        .weekday {
-            text-align: center;
-            padding: 15px 10px;
-            font-weight: bold;
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .weekday:first-child { color: #e74c3c; }
-        .weekday:last-child { color: #3498db; }
-
-        /* ===== 修改部分開始 ===== */
-        .days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            align-items: start;  /* 新增：讓格子頂部對齊 */
-        }
-
+        .nav-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
+        .switch-calendar-btn { background: rgba(255,255,255,0.9); color: #333; font-weight: bold; }
+        .switch-calendar-btn:hover { background: white; transform: scale(1.05); }
+        .today-btn { background: #27ae60; }
+        .current-month { font-size: 1.3em; font-weight: bold; color: white; min-width: 130px; text-align: center; }
+        .calendar { background: white; border-radius: 0 0 20px 20px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 5px; }
+        .weekday { text-align: center; padding: 15px 10px; font-weight: bold; color: #666; font-size: 0.9em; }
+        .weekday:first-child { color: #e74c3c; } .weekday:last-child { color: #3498db; }
+        .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; align-items: start; }
         .day {
-            height: 90px;  /* 修改：固定高度（原本是 min-height） */
-            padding: 10px;
-            border-radius: 10px;
-            background: #f8f9fa;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;  /* 新增：超出內容隱藏 */
+            height: 90px; padding: 10px; border-radius: 10px; background: #f8f9fa;
+            cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
         }
-        /* ===== 修改部分結束 ===== */
-
-        .day:hover {
-            background: #e8f4fd;
-            transform: scale(1.02);
-        }
-
+        .day:hover { background: #e8f4fd; transform: scale(1.02); }
         .day.other-month { opacity: 0.4; }
-
-        .day.today {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
+        .day.today { background: var(--main-gradient); color: white; }
         .day.today .day-number { color: white !important; }
-
-        .day-number {
-            font-weight: bold;
-            font-size: 1em;
-            margin-bottom: 5px;
-            color: #333;
-        }
-
+        .day-number { font-weight: bold; font-size: 1em; margin-bottom: 5px; color: #333; }
         .day:nth-child(7n+1) .day-number { color: #e74c3c; }
         .day:nth-child(7n) .day-number { color: #3498db; }
         .day.today .day-number { color: white !important; }
-
-        .events-container {
-            max-height: 50px;
-            overflow-y: auto;
-        }
-
+        .events-container { max-height: 50px; overflow-y: auto; }
         .event {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7em;
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            background: var(--main-gradient); color: white; padding: 2px 6px;
+            border-radius: 4px; font-size: 0.7em; margin-bottom: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-
-        .day.today .event {
-            background: rgba(255,255,255,0.3);
-        }
-
+        .day.today .event { background: rgba(255,255,255,0.3); }
         .event.priority-high { background: linear-gradient(135deg, #e74c3c, #c0392b); }
         .event.priority-medium { background: linear-gradient(135deg, #f39c12, #d68910); }
         .event.priority-low { background: linear-gradient(135deg, #27ae60, #1e8449); }
-
         .event-count {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #e74c3c;
-            color: white;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            font-size: 0.65em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white;
+            width: 18px; height: 18px; border-radius: 50%; font-size: 0.65em;
+            display: flex; align-items: center; justify-content: center;
         }
-
+        /* 提醒區域樣式 */
+        .alerts-container {
+            margin-top: 20px; background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px); animation: slideUp 0.4s ease-out;
+        }
+        .alerts-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
+            color: #333; font-size: 1.1em; font-weight: bold;
+            border-bottom: 2px solid #eee; padding-bottom: 10px;
+        }
+        .alert-list { display: flex; flex-direction: column; gap: 10px; }
+        .alert-item {
+            display: flex; align-items: center; background: #f8f9fa; padding: 12px;
+            border-radius: 10px; border-left: 5px solid var(--accent-color);
+            transition: transform 0.2s;
+        }
+        .alert-item:hover { transform: translateX(5px); background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .alert-date {
+            font-weight: bold; color: #666; font-size: 0.85em; min-width: 90px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #eee; padding: 5px 10px; border-radius: 8px; margin-right: 15px;
+        }
+        .alert-date span.day-num { font-size: 1.2em; color: #333; }
+        .alert-date span.week-day { font-size: 0.8em; }
+        .alert-content { flex: 1; }
+        .alert-title { font-weight: bold; color: #333; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+        .alert-time { font-size: 0.85em; color: var(--accent-color); font-weight: bold; }
+        .alert-source { font-size: 0.75em; background: #e0e0e0; color: #555; padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+        .no-upcoming { text-align: center; color: #999; padding: 15px; font-style: italic; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
         .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
         }
-
         .modal.active { display: flex; }
-
         .modal-content {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            width: 90%;
-            max-width: 450px;
-            max-height: 80vh;
-            overflow-y: auto;
-            animation: slideIn 0.3s;
+            background: white; border-radius: 20px; padding: 25px; width: 90%;
+            max-width: 450px; max-height: 80vh; overflow-y: auto; animation: slideIn 0.3s;
         }
-
-        @keyframes slideIn {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .modal-header h2 {
-            color: #333;
-            font-size: 1.3em;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 1.8em;
-            cursor: pointer;
-            color: #999;
-        }
-
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee; }
+        .modal-header h2 { color: #333; font-size: 1.3em; }
+        .close-btn { background: none; border: none; font-size: 1.8em; cursor: pointer; color: #999; }
         .close-btn:hover { color: #e74c3c; }
-
-        .form-group {
-            margin-bottom: 18px;
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #333; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em;
         }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 70px;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-        }
-
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--accent-color); }
+        .form-group textarea { resize: vertical; min-height: 70px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px 20px; border: none; border-radius: 10px; font-size: 1em; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: var(--main-gradient); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: #e0e0e0; color: #333; }
         .event-list { margin-top: 15px; }
-
         .event-item {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: #f8f9fa; border-radius: 10px; padding: 12px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-
         .event-item:hover { background: #e8f4fd; }
-
         .event-info { flex: 1; }
-
-        .event-info h4 {
-            color: #333;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .event-info p {
-            color: #666;
-            font-size: 0.85em;
-        }
-
-        .event-time {
-            color: #667eea;
-            font-weight: bold;
-        }
-
-        .event-actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        .event-actions button {
-            padding: 6px 10px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8em;
-        }
-
+        .event-info h4 { color: #333; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .event-info p { color: #666; font-size: 0.85em; }
+        .event-time { color: var(--accent-color); font-weight: bold; }
+        .event-actions { display: flex; gap: 6px; }
+        .event-actions button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; }
         .edit-btn { background: #3498db; color: white; }
         .delete-btn { background: #e74c3c; color: white; }
-
-        .priority-badge {
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.7em;
-        }
-
+        .priority-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.7em; }
         .priority-badge.high { background: #ffebee; color: #e74c3c; }
         .priority-badge.medium { background: #fff8e1; color: #f39c12; }
         .priority-badge.low { background: #e8f5e9; color: #27ae60; }
-
-        .no-events {
-            text-align: center;
-            color: #999;
-            padding: 25px;
-        }
-
+        .no-events { text-align: center; color: #999; padding: 25px; }
         .connection-status {
-            position: fixed;
-            bottom: 15px;
-            right: 15px;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            z-index: 100;
+            position: fixed; bottom: 15px; right: 15px; padding: 8px 15px;
+            border-radius: 20px; font-size: 0.8em; color: white;
+            display: flex; align-items: center; gap: 6px; z-index: 100;
         }
-
         .connection-status.online { background: #27ae60; }
         .connection-status.offline { background: #95a5a6; }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: white;
-        }
-
-        /* ===== 手機版修改部分 ===== */
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: white; }
+        
         @media (max-width: 768px) {
             body { padding: 10px; }
             .header { flex-direction: column; gap: 10px; padding: 15px; }
-            .day { 
-                height: 65px;  /* 修改：固定高度（原本是 min-height） */
-                padding: 5px; 
-            }
+            .day { height: 65px; padding: 5px; }
             .day-number { font-size: 0.85em; }
             .event { font-size: 0.6em; }
             .weekday { padding: 10px 5px; font-size: 0.8em; }
@@ -415,37 +175,30 @@
             .event-item { flex-direction: column; align-items: flex-start; gap: 10px; }
             .event-actions { width: 100%; }
             .event-actions button { flex: 1; }
+            .alert-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .alert-date { width: 100%; flex-direction: row; justify-content: flex-start; gap: 10px; margin-right: 0; }
+            .alert-source { margin-left: 0; align-self: flex-start; }
         }
-
         .toast {
-            position: fixed;
-            bottom: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 25px;
-            border-radius: 10px;
-            color: white;
-            z-index: 2000;
+            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+            padding: 12px 25px; border-radius: 10px; color: white; z-index: 2000;
             animation: toastIn 0.3s;
         }
-
         .toast.success { background: #27ae60; }
         .toast.error { background: #e74c3c; }
-
-        @keyframes toastIn {
-            from { transform: translate(-50%, 50px); opacity: 0; }
-            to { transform: translate(-50%, 0); opacity: 1; }
-        }
+        .toast.info { background: #3498db; }
+        @keyframes toastIn { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="logo">
-                <span>📅</span>
-                <span>共享日程</span>
+                <span id="logoIcon">📐</span>
+                <span id="logoText">數學測考</span>
             </div>
             <div class="nav-buttons">
+                <button class="nav-btn switch-calendar-btn" onclick="toggleCalendarMode()">🔄 切換其他測考及假期</button>
                 <button class="nav-btn" onclick="previousMonth()">◀ 上月</button>
                 <span class="current-month" id="currentMonth"></span>
                 <button class="nav-btn" onclick="nextMonth()">下月 ▶</button>
@@ -455,21 +208,24 @@
 
         <div class="calendar">
             <div class="weekdays">
-                <div class="weekday">週日</div>
-                <div class="weekday">週一</div>
-                <div class="weekday">週二</div>
-                <div class="weekday">週三</div>
-                <div class="weekday">週四</div>
-                <div class="weekday">週五</div>
-                <div class="weekday">週六</div>
+                <div class="weekday">週日</div><div class="weekday">週一</div><div class="weekday">週二</div>
+                <div class="weekday">週三</div><div class="weekday">週四</div><div class="weekday">週五</div><div class="weekday">週六</div>
             </div>
             <div class="days" id="calendarDays"></div>
+        </div>
+
+        <!-- 提醒區域 (僅在日曆 A 顯示) -->
+        <div id="upcomingAlerts" class="alerts-container" style="display: none;">
+            <div class="alerts-header">
+                <span class="alerts-icon">🔔</span>
+                <span>未來兩週預覽 (來自其他測考及假期)</span>
+            </div>
+            <div class="alert-list" id="alertList"><div class="no-upcoming">載入中...</div></div>
         </div>
     </div>
 
     <div class="connection-status offline" id="connectionStatus">
-        <span class="status-dot"></span>
-        <span id="statusText">連接中...</span>
+        <span class="status-dot"></span><span id="statusText">連接中...</span>
     </div>
 
     <div class="modal" id="dayModal">
@@ -478,9 +234,7 @@
                 <h2 id="modalDate"></h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
-            <button class="btn btn-primary" style="width:100%; margin-bottom:15px;" onclick="showAddForm()">
-                ➕ 添加日程
-            </button>
+            <button class="btn btn-primary" style="width:100%; margin-bottom:15px;" onclick="showAddForm()">➕ 添加日程</button>
             <div class="event-list" id="eventList"></div>
         </div>
     </div>
@@ -494,7 +248,7 @@
             <form id="eventForm" onsubmit="saveEvent(event)">
                 <div class="form-group">
                     <label>📝 標題</label>
-                    <input type="text" id="eventTitle" placeholder="日程標題" required>
+                    <input type="text" id="eventTitle" placeholder="例如：微積分測驗" required>
                 </div>
                 <div class="form-group">
                     <label>⏰ 時間</label>
@@ -503,14 +257,12 @@
                 <div class="form-group">
                     <label>🎯 優先級</label>
                     <select id="eventPriority">
-                        <option value="low">低</option>
-                        <option value="medium">中</option>
-                        <option value="high">高</option>
+                        <option value="low">低</option><option value="medium">中</option><option value="high">高</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>📋 備註</label>
-                    <textarea id="eventDescription" placeholder="備註說明"></textarea>
+                    <textarea id="eventDescription" placeholder="考試範圍、地點等說明"></textarea>
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" onclick="closeEventModal()">取消</button>
@@ -531,58 +283,175 @@
             appId: "1:723813631446:web:8b2904882134ffcc051077"
         };
 
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         let currentDate = new Date();
         let selectedDate = null;
         let events = {};
         let editingEventId = null;
-        let eventsRef = null;
         let isConnected = false;
+        
+        // 狀態管理
+        let currentCalendarId = 'calendarA'; 
+        let eventsRef = null;
+        let localStorageKey = 'sharedCalendarEvents_A';
+        let calendarB_Events = {}; 
 
-        // 頁面載入時執行
-        loadLocalData();
+        // ===== 已更新名稱的配置 =====
+        const calendarConfigs = {
+            calendarA: { 
+                name: '數學測考', 
+                icon: '📐', 
+                dbPath: 'events', 
+                storageKey: 'sharedCalendarEvents_A', 
+                switchBtnText: '🔄 切換其他測考及假期' 
+            },
+            calendarB: { 
+                name: '其他測考及假期', 
+                icon: '🗓️', 
+                dbPath: 'events_other', 
+                storageKey: 'sharedCalendarEvents_B', 
+                switchBtnText: '🔄 切換數學測考' 
+            }
+        };
+
+        initCalendarMode('calendarA');
         renderCalendar();
-        document.addEventListener('DOMContentLoaded', initFirebase);
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFirebaseListener();
+            fetchCalendarBData();
+        });
+
+        function toggleCalendarMode() {
+            const newMode = currentCalendarId === 'calendarA' ? 'calendarB' : 'calendarA';
+            initCalendarMode(newMode);
+            showToast(`已切換至：${calendarConfigs[newMode].name}`, 'info');
+        }
+
+        function initCalendarMode(modeId) {
+            currentCalendarId = modeId;
+            const config = calendarConfigs[modeId];
+            
+            document.getElementById('logoText').textContent = config.name;
+            document.getElementById('logoIcon').textContent = config.icon;
+            document.querySelector('.switch-calendar-btn').textContent = config.switchBtnText;
+            localStorageKey = config.storageKey;
+            
+            if (modeId === 'calendarB') {
+                document.body.classList.add('calendar-2-mode');
+                document.getElementById('upcomingAlerts').style.display = 'none';
+            } else {
+                document.body.classList.remove('calendar-2-mode');
+                document.getElementById('upcomingAlerts').style.display = 'block';
+                renderUpcomingAlerts();
+            }
+
+            eventsRef = database.ref(config.dbPath);
+            loadLocalData();
+            renderCalendar();
+            setupFirebaseListener();
+            
+            console.log(`[系統] 已切換至 ${config.name}, 數據路徑: ${config.dbPath}`);
+        }
 
         function loadLocalData() {
             try {
-                const saved = localStorage.getItem('sharedCalendarEvents');
-                if (saved) events = JSON.parse(saved);
-            } catch (e) { events = {}; }
+                const saved = localStorage.getItem(localStorageKey);
+                events = saved ? JSON.parse(saved) : {};
+            } catch (e) { 
+                console.error("讀取本地數據失敗", e);
+                events = {}; 
+            }
         }
 
         function saveLocalData() {
-            localStorage.setItem('sharedCalendarEvents', JSON.stringify(events));
+            localStorage.setItem(localStorageKey, JSON.stringify(events));
         }
 
-        function initFirebase() {
-            try {
-                firebase.initializeApp(firebaseConfig);
-                const database = firebase.database();
-                eventsRef = database.ref('events');
+        function setupFirebaseListener() {
+            if (!eventsRef) return;
+            
+            database.ref('.info/connected').on('value', (snap) => {
+                isConnected = snap.val() === true;
+                updateStatus(isConnected);
+            });
 
-                database.ref('.info/connected').on('value', (snap) => {
-                    isConnected = snap.val() === true;
-                    updateStatus(isConnected);
-                });
-
-                eventsRef.on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) events = data;
+            eventsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (JSON.stringify(events) !== JSON.stringify(data)) {
+                    events = data || {};
                     saveLocalData();
                     renderCalendar();
                     updateOpenModal();
-                    updateStatus(true);
-                }, () => updateStatus(false));
-
-            } catch (e) {
-                console.log('離線模式', e);
+                    console.log(`[同步] ${currentCalendarId} 數據已從雲端更新`);
+                }
+                updateStatus(true);
+            }, (error) => {
+                console.error("[Firebase] 讀取錯誤:", error);
                 updateStatus(false);
+            });
+        }
+
+        function fetchCalendarBData() {
+            const calB_Ref = database.ref('events_other');
+            calB_Ref.on('value', (snapshot) => {
+                calendarB_Events = snapshot.val() || {};
+                if (currentCalendarId === 'calendarA') renderUpcomingAlerts();
+            });
+        }
+
+        function renderUpcomingAlerts() {
+            const listEl = document.getElementById('alertList');
+            if (!listEl) return;
+            const today = new Date(); today.setHours(0,0,0,0);
+            const endDate = new Date(today); endDate.setDate(endDate.getDate() + 14);
+            let upcomingEvents = [];
+
+            for (const dateKey in calendarB_Events) {
+                const parts = dateKey.split('-');
+                if (parts.length !== 3) continue;
+                const eventDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                eventDate.setHours(0,0,0,0);
+                if (eventDate >= today && eventDate <= endDate) {
+                    Object.values(calendarB_Events[dateKey]).forEach(ev => {
+                        upcomingEvents.push({ ...ev, fullDate: eventDate, dateKey: dateKey });
+                    });
+                }
             }
+            upcomingEvents.sort((a, b) => {
+                if (a.fullDate.getTime() !== b.fullDate.getTime()) return a.fullDate.getTime() - b.fullDate.getTime();
+                return (a.time || '').localeCompare(b.time || '');
+            });
+
+            if (upcomingEvents.length === 0) {
+                listEl.innerHTML = '<div class="no-upcoming">✅ 未來兩週沒有來自「其他測考及假期」的日程</div>';
+                return;
+            }
+            const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            listEl.innerHTML = upcomingEvents.map(ev => {
+                const m = ev.fullDate.getMonth() + 1, d = ev.fullDate.getDate(), w = weekDays[ev.fullDate.getDay()];
+                const timeStr = ev.time ? `<span class="alert-time">⏰ ${ev.time}</span>` : '';
+                const pMap = { high: '🔴', medium: '🟡', low: '🟢' };
+                return `
+                <div class="alert-item">
+                    <div class="alert-date"><span class="day-num">${m}/${d}</span><span class="week-day">${w}</span></div>
+                    <div class="alert-content">
+                        <div class="alert-title">${pMap[ev.priority] || '🟢'} ${ev.title} ${timeStr}</div>
+                        ${ev.description ? `<div style="font-size:0.8em; color:#666; margin-top:2px;">${ev.description}</div>` : ''}
+                    </div>
+                    <div class="alert-source">其他測考及假期</div>
+                </div>`;
+            }).join('');
         }
 
         function syncToCloud() {
             if (eventsRef && isConnected) {
-                eventsRef.set(events).catch(() => {});
+                eventsRef.set(events).catch((err) => {
+                    console.error("同步失敗", err);
+                    showToast('同步失敗，已存於本地', 'error');
+                });
             }
         }
 
@@ -591,81 +460,53 @@
             const text = document.getElementById('statusText');
             if (el && text) {
                 el.className = 'connection-status ' + (online ? 'online' : 'offline');
-                text.textContent = online ? '已同步' : '離線';
+                const shortName = calendarConfigs[currentCalendarId].name.length > 4 
+                    ? calendarConfigs[currentCalendarId].name.substring(0, 4) + '..' 
+                    : calendarConfigs[currentCalendarId].name;
+                text.textContent = online ? `${shortName} 已同步` : '離線模式';
             }
         }
 
         function renderCalendar() {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            
+            const year = currentDate.getFullYear(), month = currentDate.getMonth();
             const monthEl = document.getElementById('currentMonth');
-            if (monthEl) {
-                monthEl.textContent = `${year}年 ${month + 1}月`;
-            }
-
+            if (monthEl) monthEl.textContent = `${year}年 ${month + 1}月`;
             const firstDay = new Date(year, month, 1).getDay();
             const totalDays = new Date(year, month + 1, 0).getDate();
             const prevLastDay = new Date(year, month, 0).getDate();
             const container = document.getElementById('calendarDays');
-            
             if (!container) return;
-            
             container.innerHTML = '';
             const today = new Date();
-
-            for (let i = firstDay - 1; i >= 0; i--) {
-                container.appendChild(createDay(prevLastDay - i, year, month - 1, true));
-            }
-
+            for (let i = firstDay - 1; i >= 0; i--) container.appendChild(createDay(prevLastDay - i, year, month - 1, true));
             for (let d = 1; d <= totalDays; d++) {
                 const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
                 container.appendChild(createDay(d, year, month, false, isToday));
             }
-
             const remaining = 42 - container.children.length;
-            for (let d = 1; d <= remaining; d++) {
-                container.appendChild(createDay(d, year, month + 1, true));
-            }
+            for (let d = 1; d <= remaining; d++) container.appendChild(createDay(d, year, month + 1, true));
         }
 
         function createDay(day, year, month, isOther, isToday = false) {
             const el = document.createElement('div');
             el.className = 'day' + (isOther ? ' other-month' : '') + (isToday ? ' today' : '');
-
             let y = year, m = month;
-            if (month < 0) { m = 11; y--; }
-            else if (month > 11) { m = 0; y++; }
-
+            if (month < 0) { m = 11; y--; } else if (month > 11) { m = 0; y++; }
             const key = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
             const dayEvents = events[key] ? Object.values(events[key]) : [];
             dayEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-
             el.innerHTML = `
                 <div class="day-number">${day}</div>
-                <div class="events-container">
-                    ${dayEvents.slice(0,3).map(e => `<div class="event priority-${e.priority}">${e.title}</div>`).join('')}
-                </div>
+                <div class="events-container">${dayEvents.slice(0,3).map(e => `<div class="event priority-${e.priority}">${e.title}</div>`).join('')}</div>
                 ${dayEvents.length > 0 ? `<div class="event-count">${dayEvents.length}</div>` : ''}
             `;
             el.onclick = () => openDayModal(y, m, day);
             return el;
         }
 
-        function previousMonth() { 
-            currentDate.setMonth(currentDate.getMonth() - 1); 
-            renderCalendar(); 
-        }
-        
-        function nextMonth() { 
-            currentDate.setMonth(currentDate.getMonth() + 1); 
-            renderCalendar(); 
-        }
-        
-        function goToToday() { 
-            currentDate = new Date(); 
-            renderCalendar(); 
-        }
+        function previousMonth() { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); }
+        function nextMonth() { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); }
+        function goToToday() { currentDate = new Date(); renderCalendar(); }
 
         function openDayModal(year, month, day) {
             selectedDate = { year, month, day };
@@ -673,48 +514,34 @@
             renderEventList();
             document.getElementById('dayModal').classList.add('active');
         }
-
-        function closeModal() { 
-            document.getElementById('dayModal').classList.remove('active'); 
-        }
-
+        function closeModal() { document.getElementById('dayModal').classList.remove('active'); }
         function showAddForm() {
             editingEventId = null;
             document.getElementById('eventModalTitle').textContent = '添加日程';
             document.getElementById('eventForm').reset();
             document.getElementById('eventModal').classList.add('active');
         }
-
-        function closeEventModal() {
-            document.getElementById('eventModal').classList.remove('active');
-            editingEventId = null;
-        }
-
+        function closeEventModal() { document.getElementById('eventModal').classList.remove('active'); editingEventId = null; }
         function updateOpenModal() {
-            if (selectedDate && document.getElementById('dayModal').classList.contains('active')) {
-                renderEventList();
-            }
+            if (selectedDate && document.getElementById('dayModal').classList.contains('active')) renderEventList();
         }
 
         function renderEventList() {
+            if (!selectedDate) return;
             const key = `${selectedDate.year}-${String(selectedDate.month+1).padStart(2,'0')}-${String(selectedDate.day).padStart(2,'0')}`;
             const list = document.getElementById('eventList');
             const dayEvents = events[key] ? Object.values(events[key]) : [];
-
-            if (dayEvents.length === 0) {
-                list.innerHTML = '<div class="no-events">📭 沒有日程</div>';
-                return;
+            
+            if (dayEvents.length === 0) { 
+                list.innerHTML = '<div class="no-events">📭 沒有日程</div>'; 
+                return; 
             }
-
             dayEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
             list.innerHTML = dayEvents.map(e => `
                 <div class="event-item">
                     <div class="event-info">
-                        <h4>
-                            ${e.time ? `<span class="event-time">${e.time}</span>` : ''}
-                            ${e.title}
-                            <span class="priority-badge ${e.priority}">${e.priority === 'high' ? '高' : e.priority === 'medium' ? '中' : '低'}</span>
-                        </h4>
+                        <h4>${e.time ? `<span class="event-time">${e.time}</span>` : ''} ${e.title}
+                        <span class="priority-badge ${e.priority}">${e.priority === 'high' ? '高' : e.priority === 'medium' ? '中' : '低'}</span></h4>
                         ${e.description ? `<p>${e.description}</p>` : ''}
                     </div>
                     <div class="event-actions">
@@ -729,21 +556,14 @@
             e.preventDefault();
             const key = `${selectedDate.year}-${String(selectedDate.month+1).padStart(2,'0')}-${String(selectedDate.day).padStart(2,'0')}`;
             const id = editingEventId || Date.now().toString();
-
             if (!events[key]) events[key] = {};
             events[key][id] = {
-                id,
-                title: document.getElementById('eventTitle').value,
+                id, title: document.getElementById('eventTitle').value,
                 time: document.getElementById('eventTime').value,
                 priority: document.getElementById('eventPriority').value,
                 description: document.getElementById('eventDescription').value
             };
-
-            saveLocalData();
-            syncToCloud();
-            renderCalendar();
-            renderEventList();
-            closeEventModal();
+            saveLocalData(); syncToCloud(); renderCalendar(); renderEventList(); closeEventModal();
             showToast('已保存', 'success');
         }
 
@@ -751,7 +571,6 @@
             const key = `${selectedDate.year}-${String(selectedDate.month+1).padStart(2,'0')}-${String(selectedDate.day).padStart(2,'0')}`;
             const ev = events[key]?.[id];
             if (!ev) return;
-
             editingEventId = id;
             document.getElementById('eventModalTitle').textContent = '編輯日程';
             document.getElementById('eventTitle').value = ev.title || '';
@@ -761,33 +580,61 @@
             document.getElementById('eventModal').classList.add('active');
         }
 
+        // 修復後的刪除功能 (直接操作 Firebase)
         function deleteEvent(id) {
-            if (!confirm('確定刪除？')) return;
+            if (!selectedDate) {
+                alert('錯誤：未選擇日期');
+                return;
+            }
+
+            if (!confirm('確定要刪除此日程嗎？此操作無法復原。')) return;
+            
             const key = `${selectedDate.year}-${String(selectedDate.month+1).padStart(2,'0')}-${String(selectedDate.day).padStart(2,'0')}`;
             
+            console.log(`[刪除開始] 日曆: ${currentCalendarId}, 日期Key: ${key}, 事件ID: ${id}`);
+
+            // 1. 嘗試從本地記憶體刪除 (為了即時 UI 反饋)
+            let deletedLocally = false;
             if (events[key] && events[key][id]) {
                 delete events[key][id];
                 if (Object.keys(events[key]).length === 0) {
                     delete events[key];
                 }
+                deletedLocally = true;
+                saveLocalData();
+                renderCalendar();
+                renderEventList();
             }
 
-            saveLocalData();
-            syncToCloud();
-            renderCalendar();
-            renderEventList();
-            showToast('已刪除', 'success');
+            // 2. 直接從 Firebase 刪除 (最可靠的方法)
+            const eventRef = eventsRef.child(`${key}/${id}`);
+            
+            eventRef.remove()
+                .then(() => {
+                    console.log('[雲端刪除] 成功');
+                    if(!deletedLocally) {
+                        renderCalendar();
+                        renderEventList();
+                    }
+                    showToast('已刪除', 'success');
+                })
+                .catch((error) => {
+                    console.error('[雲端刪除] 失敗:', error);
+                    if(deletedLocally) {
+                        showToast('本地已刪除，但同步失敗', 'error');
+                    } else {
+                        showToast('刪除失敗，請檢查網路', 'error');
+                    }
+                });
         }
 
         function showToast(message, type) {
             const existing = document.querySelector('.toast');
             if (existing) existing.remove();
-
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
             document.body.appendChild(toast);
-
             setTimeout(() => toast.remove(), 3000);
         }
     </script>
