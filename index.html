@@ -91,22 +91,33 @@
         }
         .alert-list { display: flex; flex-direction: column; gap: 10px; }
         .alert-item {
-            display: flex; align-items: center; background: #f8f9fa; padding: 12px;
+            display: flex; align-items: flex-start; background: #f8f9fa; padding: 12px;
             border-radius: 10px; border-left: 5px solid var(--accent-color);
             transition: transform 0.2s;
         }
         .alert-item:hover { transform: translateX(5px); background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .alert-date {
-            font-weight: bold; color: #666; font-size: 0.85em; min-width: 90px;
+        .alert-date-box {
+            font-weight: bold; color: #666; font-size: 0.85em; min-width: 70px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #eee; padding: 5px 10px; border-radius: 8px; margin-right: 15px;
+            background: #eee; padding: 8px 5px; border-radius: 8px; margin-right: 15px;
+            text-align: center; flex-shrink: 0;
         }
-        .alert-date span.day-num { font-size: 1.2em; color: #333; }
-        .alert-date span.week-day { font-size: 0.8em; }
-        .alert-content { flex: 1; }
-        .alert-title { font-weight: bold; color: #333; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+        .alert-date-box span.count-num { font-size: 1.4em; color: var(--accent-color); line-height: 1; }
+        .alert-date-box span.label { font-size: 0.7em; color: #888; margin-top: 4px; }
+        
+        .alert-content { flex: 1; min-width: 0; } /* min-width:0 防止文字溢出 */
+        .alert-title { 
+            font-weight: bold; color: #333; margin-bottom: 6px; 
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; 
+        }
+        .alert-dates-list { 
+            font-size: 0.85em; color: #555; background: #fff; 
+            padding: 6px 10px; border-radius: 6px; border: 1px dashed #ccc;
+            display: inline-block; margin-top: 4px; line-height: 1.6;
+            word-break: break-word; /* 防止長日期列表撐破版面 */
+        }
         .alert-time { font-size: 0.85em; color: var(--accent-color); font-weight: bold; }
-        .alert-source { font-size: 0.75em; background: #e0e0e0; color: #555; padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+        .alert-source { font-size: 0.75em; background: #e0e0e0; color: #555; padding: 2px 6px; border-radius: 4px; margin-left: auto; flex-shrink: 0; }
         .no-upcoming { text-align: center; color: #999; padding: 15px; font-style: italic; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
@@ -176,8 +187,8 @@
             .event-actions { width: 100%; }
             .event-actions button { flex: 1; }
             .alert-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .alert-date { width: 100%; flex-direction: row; justify-content: flex-start; gap: 10px; margin-right: 0; }
-            .alert-source { margin-left: 0; align-self: flex-start; }
+            .alert-date-box { width: 100%; flex-direction: row; justify-content: flex-start; gap: 15px; margin-right: 0; padding: 8px; }
+            .alert-source { margin-left: 0; align-self: flex-start; margin-top: 5px; }
         }
         .toast {
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
@@ -298,7 +309,6 @@
         let localStorageKey = 'sharedCalendarEvents_A';
         let calendarB_Events = {}; 
 
-        // ===== 已更新名稱的配置 =====
         const calendarConfigs = {
             calendarA: { 
                 name: '數學測考', 
@@ -352,8 +362,6 @@
             loadLocalData();
             renderCalendar();
             setupFirebaseListener();
-            
-            console.log(`[系統] 已切換至 ${config.name}, 數據路徑: ${config.dbPath}`);
         }
 
         function loadLocalData() {
@@ -385,7 +393,6 @@
                     saveLocalData();
                     renderCalendar();
                     updateOpenModal();
-                    console.log(`[同步] ${currentCalendarId} 數據已從雲端更新`);
                 }
                 updateStatus(true);
             }, (error) => {
@@ -402,44 +409,116 @@
             });
         }
 
+        /**
+         * 【優化核心】按標題分組，並依「最早開始日期」排序
+         */
         function renderUpcomingAlerts() {
             const listEl = document.getElementById('alertList');
             if (!listEl) return;
-            const today = new Date(); today.setHours(0,0,0,0);
-            const endDate = new Date(today); endDate.setDate(endDate.getDate() + 14);
-            let upcomingEvents = [];
+            
+            const today = new Date(); 
+            today.setHours(0,0,0,0);
+            const endDate = new Date(today); 
+            endDate.setDate(endDate.getDate() + 14);
+            
+            let rawEvents = [];
 
+            // 1. 收集所有未來兩週的事件
             for (const dateKey in calendarB_Events) {
                 const parts = dateKey.split('-');
                 if (parts.length !== 3) continue;
                 const eventDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                 eventDate.setHours(0,0,0,0);
+                
                 if (eventDate >= today && eventDate <= endDate) {
                     Object.values(calendarB_Events[dateKey]).forEach(ev => {
-                        upcomingEvents.push({ ...ev, fullDate: eventDate, dateKey: dateKey });
+                        rawEvents.push({ 
+                            ...ev, 
+                            fullDate: eventDate, 
+                            dateKey: dateKey,
+                            timestamp: eventDate.getTime()
+                        });
                     });
                 }
             }
-            upcomingEvents.sort((a, b) => {
-                if (a.fullDate.getTime() !== b.fullDate.getTime()) return a.fullDate.getTime() - b.fullDate.getTime();
-                return (a.time || '').localeCompare(b.time || '');
+
+            // 2. 按標題分組 (使用 Map)
+            const groupedMap = new Map();
+            
+            rawEvents.forEach(ev => {
+                const groupKey = ev.title; 
+                
+                if (!groupedMap.has(groupKey)) {
+                    groupedMap.set(groupKey, {
+                        title: ev.title,
+                        priority: ev.priority,
+                        description: ev.description,
+                        time: ev.time,
+                        dates: [],
+                        firstTimestamp: ev.timestamp // 記錄該組第一次出現的時間
+                    });
+                }
+                const group = groupedMap.get(groupKey);
+                group.dates.push(ev.fullDate);
+                // 更新最早時間 (雖然因為下面有排序，這步理論上不需要，但為了嚴謹保留)
+                if (ev.timestamp < group.firstTimestamp) {
+                    group.firstTimestamp = ev.timestamp;
+                }
             });
 
-            if (upcomingEvents.length === 0) {
+            // 轉為陣列
+            let groupedEvents = Array.from(groupedMap.values());
+
+            // 3. 【關鍵排序】依照每組的「最早開始時間 (firstTimestamp)」由小到大排序
+            groupedEvents.sort((a, b) => a.firstTimestamp - b.firstTimestamp);
+
+            // 4. 對每組內部的日期也進行排序 (以防萬一資料亂序)
+            groupedEvents.forEach(group => {
+                group.dates.sort((a, b) => a.getTime() - b.getTime());
+            });
+
+            // 5. 渲染 UI
+            if (groupedEvents.length === 0) {
                 listEl.innerHTML = '<div class="no-upcoming">✅ 未來兩週沒有來自「其他測考及假期」的日程</div>';
                 return;
             }
+
             const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-            listEl.innerHTML = upcomingEvents.map(ev => {
-                const m = ev.fullDate.getMonth() + 1, d = ev.fullDate.getDate(), w = weekDays[ev.fullDate.getDay()];
-                const timeStr = ev.time ? `<span class="alert-time">⏰ ${ev.time}</span>` : '';
+            
+            listEl.innerHTML = groupedEvents.map(group => {
+                // 格式化日期列表: "5/1(週一), 5/8(週一)"
+                const dateStrings = group.dates.map(d => {
+                    const m = d.getMonth() + 1;
+                    const day = d.getDate();
+                    const w = weekDays[d.getDay()];
+                    return `${m}/${day}(${w})`;
+                });
+                
+                const datesDisplayStr = dateStrings.join(', ');
+
+                const timeStr = group.time ? `<span class="alert-time">⏰ ${group.time}</span>` : '';
                 const pMap = { high: '🔴', medium: '🟡', low: '🟢' };
+                const countHint = (group.dates.length > 1) 
+                    ? `<span style="font-size:0.7em; background:#eee; padding:2px 6px; border-radius:4px; margin-left:5px; color:#666;">共 ${group.dates.length} 次</span>` 
+                    : '';
+
                 return `
                 <div class="alert-item">
-                    <div class="alert-date"><span class="day-num">${m}/${d}</span><span class="week-day">${w}</span></div>
+                    <div class="alert-date-box">
+                        <span class="count-num">${group.dates.length}</span>
+                        <span class="label">項日程</span>
+                    </div>
                     <div class="alert-content">
-                        <div class="alert-title">${pMap[ev.priority] || '🟢'} ${ev.title} ${timeStr}</div>
-                        ${ev.description ? `<div style="font-size:0.8em; color:#666; margin-top:2px;">${ev.description}</div>` : ''}
+                        <div class="alert-title">
+                            ${pMap[group.priority] || '🟢'} 
+                            ${group.title} 
+                            ${countHint}
+                            ${timeStr}
+                        </div>
+                        <div class="alert-dates-list">
+                            📅 ${datesDisplayStr}
+                        </div>
+                        ${group.description ? `<div style="font-size:0.8em; color:#666; margin-top:6px;">${group.description}</div>` : ''}
                     </div>
                     <div class="alert-source">其他測考及假期</div>
                 </div>`;
@@ -580,7 +659,6 @@
             document.getElementById('eventModal').classList.add('active');
         }
 
-        // 修復後的刪除功能 (直接操作 Firebase)
         function deleteEvent(id) {
             if (!selectedDate) {
                 alert('錯誤：未選擇日期');
@@ -591,9 +669,6 @@
             
             const key = `${selectedDate.year}-${String(selectedDate.month+1).padStart(2,'0')}-${String(selectedDate.day).padStart(2,'0')}`;
             
-            console.log(`[刪除開始] 日曆: ${currentCalendarId}, 日期Key: ${key}, 事件ID: ${id}`);
-
-            // 1. 嘗試從本地記憶體刪除 (為了即時 UI 反饋)
             let deletedLocally = false;
             if (events[key] && events[key][id]) {
                 delete events[key][id];
@@ -606,12 +681,10 @@
                 renderEventList();
             }
 
-            // 2. 直接從 Firebase 刪除 (最可靠的方法)
             const eventRef = eventsRef.child(`${key}/${id}`);
             
             eventRef.remove()
                 .then(() => {
-                    console.log('[雲端刪除] 成功');
                     if(!deletedLocally) {
                         renderCalendar();
                         renderEventList();
