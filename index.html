@@ -70,9 +70,10 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .day.today .event { background: rgba(255,255,255,0.3); }
-        .event.priority-high { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-        .event.priority-medium { background: linear-gradient(135deg, #f39c12, #d68910); }
-        .event.priority-low { background: linear-gradient(135deg, #27ae60, #1e8449); }
+        .event.owner-yoyopan { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .event.owner-gaspar { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .event.owner-annie { background: linear-gradient(135deg, #f39c12, #d68910); }
+        .event.owner-candy { background: linear-gradient(135deg, #27ae60, #1e8449); }
         .event-count {
             position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white;
             width: 18px; height: 18px; border-radius: 50%; font-size: 0.65em;
@@ -161,10 +162,11 @@
         .event-actions button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; }
         .edit-btn { background: #3498db; color: white; }
         .delete-btn { background: #e74c3c; color: white; }
-        .priority-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.7em; }
-        .priority-badge.high { background: #ffebee; color: #e74c3c; }
-        .priority-badge.medium { background: #fff8e1; color: #f39c12; }
-        .priority-badge.low { background: #e8f5e9; color: #27ae60; }
+        .owner-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.7em; }
+        .owner-badge.yoyopan { background: #ffebee; color: #e74c3c; }
+        .owner-badge.gaspar { background: #e8f4fd; color: #667eea; }
+        .owner-badge.annie { background: #fff8e1; color: #f39c12; }
+        .owner-badge.candy { background: #e8f5e9; color: #27ae60; }
         .no-events { text-align: center; color: #999; padding: 25px; }
         .connection-status {
             position: fixed; bottom: 15px; right: 15px; padding: 8px 15px;
@@ -266,9 +268,12 @@
                     <input type="time" id="eventTime">
                 </div>
                 <div class="form-group">
-                    <label>🎯 優先級</label>
-                    <select id="eventPriority">
-                        <option value="low">低</option><option value="medium">中</option><option value="high">高</option>
+                    <label>👤 負責人</label>
+                    <select id="eventOwner">
+                        <option value="yoyopan">yoyopan</option>
+                        <option value="gaspar">gaspar</option>
+                        <option value="annie">annie</option>
+                        <option value="candy">candy</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -451,7 +456,7 @@
                 if (!groupedMap.has(groupKey)) {
                     groupedMap.set(groupKey, {
                         title: ev.title,
-                        priority: ev.priority,
+                        owner: ev.owner,
                         description: ev.description,
                         time: ev.time,
                         dates: [],
@@ -497,7 +502,7 @@
                 const datesDisplayStr = dateStrings.join(', ');
 
                 const timeStr = group.time ? `<span class="alert-time">⏰ ${group.time}</span>` : '';
-                const pMap = { high: '🔴', medium: '🟡', low: '🟢' };
+                const ownerMap = { yoyopan: '👤', gaspar: '👤', annie: '👤', candy: '👤' };
                 const countHint = (group.dates.length > 1) 
                     ? `<span style="font-size:0.7em; background:#eee; padding:2px 6px; border-radius:4px; margin-left:5px; color:#666;">共 ${group.dates.length} 次</span>` 
                     : '';
@@ -510,7 +515,7 @@
                     </div>
                     <div class="alert-content">
                         <div class="alert-title">
-                            ${pMap[group.priority] || '🟢'} 
+                            <span class="owner-badge ${group.owner}">${group.owner}</span>
                             ${group.title} 
                             ${countHint}
                             ${timeStr}
@@ -576,7 +581,7 @@
             dayEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
             el.innerHTML = `
                 <div class="day-number">${day}</div>
-                <div class="events-container">${dayEvents.slice(0,3).map(e => `<div class="event priority-${e.priority}">${e.title}</div>`).join('')}</div>
+                <div class="events-container">${dayEvents.slice(0,3).map(e => `<div class="event owner-${e.owner}">${e.title}</div>`).join('')}</div>
                 ${dayEvents.length > 0 ? `<div class="event-count">${dayEvents.length}</div>` : ''}
             `;
             el.onclick = () => openDayModal(y, m, day);
@@ -620,7 +625,7 @@
                 <div class="event-item">
                     <div class="event-info">
                         <h4>${e.time ? `<span class="event-time">${e.time}</span>` : ''} ${e.title}
-                        <span class="priority-badge ${e.priority}">${e.priority === 'high' ? '高' : e.priority === 'medium' ? '中' : '低'}</span></h4>
+                        <span class="owner-badge ${e.owner}">${e.owner}</span></h4>
                         ${e.description ? `<p>${e.description}</p>` : ''}
                     </div>
                     <div class="event-actions">
@@ -639,7 +644,7 @@
             events[key][id] = {
                 id, title: document.getElementById('eventTitle').value,
                 time: document.getElementById('eventTime').value,
-                priority: document.getElementById('eventPriority').value,
+                owner: document.getElementById('eventOwner').value,
                 description: document.getElementById('eventDescription').value
             };
             saveLocalData(); syncToCloud(); renderCalendar(); renderEventList(); closeEventModal();
@@ -654,7 +659,7 @@
             document.getElementById('eventModalTitle').textContent = '編輯日程';
             document.getElementById('eventTitle').value = ev.title || '';
             document.getElementById('eventTime').value = ev.time || '';
-            document.getElementById('eventPriority').value = ev.priority || 'low';
+            document.getElementById('eventOwner').value = ev.owner || 'yoyopan';
             document.getElementById('eventDescription').value = ev.description || '';
             document.getElementById('eventModal').classList.add('active');
         }
