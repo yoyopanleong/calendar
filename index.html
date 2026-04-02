@@ -101,14 +101,22 @@
         .alert-title {
             display: flex; align-items: center; justify-content: space-between; gap: 8px;
             font-weight: bold; color: #333; margin-bottom: 4px;
+            min-width: 0;
         }
         .alert-title-text {
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .alert-time { font-size: 0.8em; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
         .alert-meta {
             display: flex; align-items: center; gap: 8px;
             font-size: 0.82em; color: #666; flex-wrap: wrap;
+        }
+        .alert-date-group {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .no-upcoming { text-align: center; color: #999; padding: 15px; font-style: italic; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
