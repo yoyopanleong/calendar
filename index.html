@@ -90,35 +90,26 @@
             color: #333; font-size: 1.1em; font-weight: bold;
             border-bottom: 2px solid #eee; padding-bottom: 10px;
         }
-        .alert-list { display: flex; flex-direction: column; gap: 10px; }
+        .alert-list { display: flex; flex-direction: column; gap: 8px; }
         .alert-item {
-            display: flex; align-items: flex-start; background: #f8f9fa; padding: 12px;
-            border-radius: 10px; border-left: 5px solid var(--accent-color);
-            transition: transform 0.2s;
+            background: #f8f9fa; padding: 10px 12px; border-radius: 10px;
+            border-left: 4px solid var(--accent-color);
         }
-        .alert-item:hover { transform: translateX(5px); background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .alert-date-box {
-            font-weight: bold; color: #666; font-size: 0.85em; min-width: 70px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #eee; padding: 8px 5px; border-radius: 8px; margin-right: 15px;
-            text-align: center; flex-shrink: 0;
+        .alert-date-group {
+            font-size: 0.84em; color: #555; margin-bottom: 6px; font-weight: bold;
         }
-        .alert-date-box span.count-num { font-size: 1.4em; color: var(--accent-color); line-height: 1; }
-        .alert-date-box span.label { font-size: 0.7em; color: #888; margin-top: 4px; }
-        
-        .alert-content { flex: 1; min-width: 0; } /* min-width:0 防止文字溢出 */
-        .alert-title { 
-            font-weight: bold; color: #333; margin-bottom: 6px; 
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; 
+        .alert-title {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            font-weight: bold; color: #333; margin-bottom: 4px;
         }
-        .alert-dates-list { 
-            font-size: 0.85em; color: #555; background: #fff; 
-            padding: 6px 10px; border-radius: 6px; border: 1px dashed #ccc;
-            display: inline-block; margin-top: 4px; line-height: 1.6;
-            word-break: break-word; /* 防止長日期列表撐破版面 */
+        .alert-title-text {
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
-        .alert-time { font-size: 0.85em; color: var(--accent-color); font-weight: bold; }
-        .alert-source { font-size: 0.75em; background: #e0e0e0; color: #555; padding: 2px 6px; border-radius: 4px; margin-left: auto; flex-shrink: 0; }
+        .alert-time { font-size: 0.8em; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
+        .alert-meta {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.82em; color: #666; flex-wrap: wrap;
+        }
         .no-upcoming { text-align: center; color: #999; padding: 15px; font-style: italic; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
@@ -188,9 +179,7 @@
             .event-item { flex-direction: column; align-items: flex-start; gap: 10px; }
             .event-actions { width: 100%; }
             .event-actions button { flex: 1; }
-            .alert-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .alert-date-box { width: 100%; flex-direction: row; justify-content: flex-start; gap: 15px; margin-right: 0; padding: 8px; }
-            .alert-source { margin-left: 0; align-self: flex-start; margin-top: 5px; }
+            .alert-title { align-items: flex-start; flex-direction: column; gap: 4px; }
         }
         .toast {
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
@@ -425,109 +414,107 @@
             today.setHours(0,0,0,0);
             const endDate = new Date(today); 
             endDate.setDate(endDate.getDate() + 14);
-            
-            let rawEvents = [];
 
-            // 1. 收集所有未來兩週的事件
+            const groupedMap = new Map();
+
             for (const dateKey in calendarB_Events) {
                 const parts = dateKey.split('-');
                 if (parts.length !== 3) continue;
                 const eventDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                eventDate.setHours(0,0,0,0);
-                
-                if (eventDate >= today && eventDate <= endDate) {
-                    Object.values(calendarB_Events[dateKey]).forEach(ev => {
-                        rawEvents.push({ 
-                            ...ev, 
-                            fullDate: eventDate, 
-                            dateKey: dateKey,
-                            timestamp: eventDate.getTime()
+                eventDate.setHours(0, 0, 0, 0);
+
+                if (eventDate < today || eventDate > endDate) continue;
+
+                Object.values(calendarB_Events[dateKey]).forEach(ev => {
+                    const title = ev.title || '未命名日程';
+
+                    if (!groupedMap.has(title)) {
+                        groupedMap.set(title, {
+                            title,
+                            dateMap: new Map(),
+                            firstTimestamp: eventDate.getTime()
                         });
-                    });
-                }
+                    }
+
+                    const group = groupedMap.get(title);
+                    const dayKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+
+                    if (!group.dateMap.has(dayKey)) {
+                        group.dateMap.set(dayKey, {
+                            date: new Date(eventDate)
+                        });
+                    }
+
+                    if (eventDate.getTime() < group.firstTimestamp) {
+                        group.firstTimestamp = eventDate.getTime();
+                    }
+                });
             }
 
-            // 2. 按標題分組 (使用 Map)
-            const groupedMap = new Map();
-            
-            rawEvents.forEach(ev => {
-                const groupKey = ev.title; 
-                
-                if (!groupedMap.has(groupKey)) {
-                    groupedMap.set(groupKey, {
-                        title: ev.title,
-                        owner: ev.owner,
-                        description: ev.description,
-                        time: ev.time,
-                        dates: [],
-                        firstTimestamp: ev.timestamp // 記錄該組第一次出現的時間
-                    });
-                }
-                const group = groupedMap.get(groupKey);
-                group.dates.push(ev.fullDate);
-                // 更新最早時間 (雖然因為下面有排序，這步理論上不需要，但為了嚴謹保留)
-                if (ev.timestamp < group.firstTimestamp) {
-                    group.firstTimestamp = ev.timestamp;
-                }
-            });
+            const groupedEvents = Array.from(groupedMap.values()).sort((a, b) => a.firstTimestamp - b.firstTimestamp);
 
-            // 轉為陣列
-            let groupedEvents = Array.from(groupedMap.values());
-
-            // 3. 【關鍵排序】依照每組的「最早開始時間 (firstTimestamp)」由小到大排序
-            groupedEvents.sort((a, b) => a.firstTimestamp - b.firstTimestamp);
-
-            // 4. 對每組內部的日期也進行排序 (以防萬一資料亂序)
-            groupedEvents.forEach(group => {
-                group.dates.sort((a, b) => a.getTime() - b.getTime());
-            });
-
-            // 5. 渲染 UI
             if (groupedEvents.length === 0) {
                 listEl.innerHTML = '<div class="no-upcoming">✅ 未來兩週沒有來自「其他測考及假期」的日程</div>';
                 return;
             }
 
             const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-            
-            listEl.innerHTML = groupedEvents.map(group => {
-                // 格式化日期列表: "5/1(週一), 5/8(週一)"
-                const dateStrings = group.dates.map(d => {
-                    const m = d.getMonth() + 1;
-                    const day = d.getDate();
-                    const w = weekDays[d.getDay()];
-                    return `${m}/${day}(${w})`;
+
+            const singleDayByDate = new Map();
+            const multiDayGroups = [];
+
+            groupedEvents.forEach(group => {
+                const dateEntries = Array.from(group.dateMap.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+                if (dateEntries.length === 1) {
+                    const d = dateEntries[0].date;
+                    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    if (!singleDayByDate.has(dateKey)) {
+                        singleDayByDate.set(dateKey, { date: d, titles: [] });
+                    }
+                    singleDayByDate.get(dateKey).titles.push(group.title);
+                } else {
+                    multiDayGroups.push({ title: group.title, dates: dateEntries.map(entry => entry.date), firstTimestamp: group.firstTimestamp });
+                }
+            });
+
+            const rows = [];
+
+            Array.from(singleDayByDate.values())
+                .sort((a, b) => a.date.getTime() - b.date.getTime())
+                .forEach(item => {
+                    const dateLabel = `${item.date.getMonth() + 1}/${item.date.getDate()}(${weekDays[item.date.getDay()]})`;
+                    rows.push({
+                        ts: item.date.getTime(),
+                        html: `
+                        <div class="alert-item">
+                            <div class="alert-title">
+                                <span class="alert-title-text">${dateLabel}</span>
+                            </div>
+                            <div class="alert-date-group">${item.titles.join('、')}</div>
+                        </div>`
+                    });
                 });
-                
-                const datesDisplayStr = dateStrings.join(', ');
 
-                const timeStr = group.time ? `<span class="alert-time">⏰ ${group.time}</span>` : '';
-                const ownerMap = { yoyopan: '👤', gaspar: '👤', annie: '👤', candy: '👤' };
-                const countHint = (group.dates.length > 1) 
-                    ? `<span style="font-size:0.7em; background:#eee; padding:2px 6px; border-radius:4px; margin-left:5px; color:#666;">共 ${group.dates.length} 次</span>` 
-                    : '';
+            multiDayGroups
+                .sort((a, b) => a.firstTimestamp - b.firstTimestamp)
+                .forEach(group => {
+                    const dateText = group.dates
+                        .map(d => `${d.getMonth() + 1}/${d.getDate()}(${weekDays[d.getDay()]})`)
+                        .join('、');
+                    rows.push({
+                        ts: group.firstTimestamp,
+                        html: `
+                        <div class="alert-item">
+                            <div class="alert-title">
+                                <span class="alert-title-text">${dateText}</span>
+                            </div>
+                            <div class="alert-date-group">${group.title}</div>
+                        </div>`
+                    });
+                });
 
-                return `
-                <div class="alert-item">
-                    <div class="alert-date-box">
-                        <span class="count-num">${group.dates.length}</span>
-                        <span class="label">項日程</span>
-                    </div>
-                    <div class="alert-content">
-                        <div class="alert-title">
-                            <span class="owner-badge ${group.owner}">${group.owner}</span>
-                            ${group.title} 
-                            ${countHint}
-                            ${timeStr}
-                        </div>
-                        <div class="alert-dates-list">
-                            📅 ${datesDisplayStr}
-                        </div>
-                        ${group.description ? `<div style="font-size:0.8em; color:#666; margin-top:6px;">${group.description}</div>` : ''}
-                    </div>
-                    <div class="alert-source">其他測考及假期</div>
-                </div>`;
-            }).join('');
+            rows.sort((a, b) => a.ts - b.ts);
+            listEl.innerHTML = rows.map(row => row.html).join('');
         }
 
         function syncToCloud() {
