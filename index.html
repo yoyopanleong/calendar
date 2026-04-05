@@ -576,7 +576,7 @@
             dayEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
             el.innerHTML = `
                 <div class="day-number">${day}</div>
-                <div class="events-container">${dayEvents.slice(0,3).map(e => `<div class="event owner-${e.owner}">${e.title}</div>`).join('')}</div>
+                <div class="events-container">${dayEvents.map(e => `<div class="event owner-${e.owner}">${e.title}</div>`).join('')}</div>
                 ${dayEvents.length > 0 ? `<div class="event-count">${dayEvents.length}</div>` : ''}
             `;
             el.onclick = () => openDayModal(y, m, day);
