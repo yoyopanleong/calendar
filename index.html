@@ -45,6 +45,18 @@
         .switch-calendar-btn { background: rgba(255,255,255,0.9); color: #333; font-weight: bold; }
         .switch-calendar-btn:hover { background: white; transform: scale(1.05); }
         .today-btn { background: #27ae60; }
+        .owner-filter-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .owner-filter-btn {
+            background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.3);
+            padding: 6px 14px; border-radius: 20px; cursor: pointer;
+            font-size: 0.85em; transition: all 0.25s; font-weight: 500;
+        }
+        .owner-filter-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-1px); }
+        .owner-filter-btn.active { background: rgba(255,255,255,0.95); color: #333; border-color: white; font-weight: bold; }
+        .owner-filter-btn.active.gaspar { background: #667eea; color: white; border-color: #667eea; }
+        .owner-filter-btn.active.yoyopan { background: #e74c3c; color: white; border-color: #e74c3c; }
+        .owner-filter-btn.active.annie { background: #f39c12; color: white; border-color: #f39c12; }
+        .owner-filter-btn.active.candy { background: #27ae60; color: white; border-color: #27ae60; }
         .current-month { font-size: 1.3em; font-weight: bold; color: white; min-width: 130px; text-align: center; }
         .calendar { background: white; border-radius: 0 0 20px 20px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 5px; }
@@ -179,6 +191,7 @@
         @media (max-width: 768px) {
             body { padding: 10px; }
             .header { flex-direction: column; gap: 10px; padding: 15px; }
+            .owner-filter-group { justify-content: center; }
             .day { height: 65px; padding: 5px; }
             .day-number { font-size: 0.85em; }
             .event { font-size: 0.6em; }
@@ -213,6 +226,12 @@
                 <span class="current-month" id="currentMonth"></span>
                 <button class="nav-btn" onclick="nextMonth()">下月 ▶</button>
                 <button class="nav-btn today-btn" onclick="goToToday()">今天</button>
+            </div>
+            <div class="owner-filter-group">
+                <button class="owner-filter-btn" id="filter-gaspar" onclick="toggleOwnerFilter('gaspar')">Gaspar</button>
+                <button class="owner-filter-btn" id="filter-yoyopan" onclick="toggleOwnerFilter('yoyopan')">Yoyopan</button>
+                <button class="owner-filter-btn" id="filter-annie" onclick="toggleOwnerFilter('annie')">Annie</button>
+                <button class="owner-filter-btn" id="filter-candy" onclick="toggleOwnerFilter('candy')">Candy</button>
             </div>
         </div>
 
@@ -310,6 +329,7 @@
         let eventsRef = null;
         let localStorageKey = 'sharedCalendarEvents_A';
         let calendarB_Events = {}; 
+        let ownerFilter = null; 
 
         const calendarConfigs = {
             calendarA: { 
@@ -340,6 +360,25 @@
             const newMode = currentCalendarId === 'calendarA' ? 'calendarB' : 'calendarA';
             initCalendarMode(newMode);
             showToast(`已切換至：${calendarConfigs[newMode].name}`, 'info');
+        }
+
+        function toggleOwnerFilter(owner) {
+            if (ownerFilter === owner) {
+                ownerFilter = null;
+            } else {
+                ownerFilter = owner;
+            }
+            updateOwnerFilterButtons();
+            renderCalendar();
+        }
+
+        function updateOwnerFilterButtons() {
+            ['gaspar', 'yoyopan', 'annie', 'candy'].forEach(o => {
+                const btn = document.getElementById('filter-' + o);
+                if (btn) {
+                    btn.classList.toggle('active', ownerFilter === o);
+                }
+            });
         }
 
         function initCalendarMode(modeId) {
@@ -572,12 +611,18 @@
             let y = year, m = month;
             if (month < 0) { m = 11; y--; } else if (month > 11) { m = 0; y++; }
             const key = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const dayEvents = events[key] ? Object.values(events[key]) : [];
+            let dayEvents = events[key] ? Object.values(events[key]) : [];
             dayEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            const totalCount = dayEvents.length;
+            if (ownerFilter) {
+                dayEvents = dayEvents.filter(e => e.owner === ownerFilter);
+            }
+            const filteredCount = dayEvents.length;
+            const showCount = ownerFilter ? (filteredCount > 0 ? filteredCount : '') : (filteredCount > 0 ? totalCount : '');
             el.innerHTML = `
                 <div class="day-number">${day}</div>
                 <div class="events-container">${dayEvents.map(e => `<div class="event owner-${e.owner}">${e.title}</div>`).join('')}</div>
-                ${dayEvents.length > 0 ? `<div class="event-count">${dayEvents.length}</div>` : ''}
+                ${showCount !== '' ? `<div class="event-count">${showCount}</div>` : ''}
             `;
             el.onclick = () => openDayModal(y, m, day);
             return el;
@@ -598,6 +643,9 @@
             editingEventId = null;
             document.getElementById('eventModalTitle').textContent = '添加日程';
             document.getElementById('eventForm').reset();
+            if (ownerFilter) {
+                document.getElementById('eventOwner').value = ownerFilter;
+            }
             document.getElementById('eventModal').classList.add('active');
         }
         function closeEventModal() { document.getElementById('eventModal').classList.remove('active'); editingEventId = null; }
