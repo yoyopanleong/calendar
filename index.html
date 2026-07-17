@@ -6,6 +6,7 @@
     <title>雙重共享日程系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -226,6 +227,7 @@
                 <span class="current-month" id="currentMonth"></span>
                 <button class="nav-btn" onclick="nextMonth()">下月 ▶</button>
                 <button class="nav-btn today-btn" onclick="goToToday()">今天</button>
+                <button class="nav-btn" style="background:#e67e22;" onclick="openStudentList()">📋 學生報名</button>
             </div>
             <div class="owner-filter-group">
                 <button class="owner-filter-btn" id="filter-gaspar" onclick="toggleOwnerFilter('gaspar')">Gaspar</button>
@@ -304,6 +306,161 @@
         </div>
     </div>
 
+    <!-- 學生報名列表 Modal -->
+    <div class="modal" id="studentListModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2>📋 學生報名表</h2>
+                <button class="close-btn" onclick="closeStudentListModal()">&times;</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="showStudentForm()">➕ 新增報名</button>
+                <button class="btn" style="background:#27ae60; color:white;" onclick="exportToExcel()">📥 匯出 Excel</button>
+                <span id="studentCount" style="display:flex; align-items:center; color:#666; font-size:0.9em;"></span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table id="studentTable" style="width:100%; border-collapse:collapse; font-size:0.85em;">
+                    <thead>
+                        <tr style="background:#f0f0f0;">
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">中文姓名</th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">English Name</th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Mobile</th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">可補習日子</th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">留班</th>
+                            <th style="padding:8px; text-align:center; border-bottom:2px solid #ddd;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody"></tbody>
+                </table>
+            </div>
+            <div id="noStudentData" class="no-events">📭 暫無學生報名資料</div>
+        </div>
+    </div>
+
+    <!-- 學生報名表單 Modal -->
+    <div class="modal" id="studentFormModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="studentFormTitle">新增報名</h2>
+                <button class="close-btn" onclick="closeStudentFormModal()">&times;</button>
+            </div>
+            <form id="studentForm" onsubmit="saveStudent(event)">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label>中文姓名 *</label>
+                        <input type="text" id="studentChineseName" placeholder="中文姓名" required>
+                    </div>
+                    <div class="form-group">
+                        <label>中文姓名譯音</label>
+                        <input type="text" id="studentTransliteration" placeholder="粵語拼音/國語拼音">
+                    </div>
+                    <div class="form-group">
+                        <label>English Name</label>
+                        <input type="text" id="studentEnglishName" placeholder="English Name">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mobile No *</label>
+                    <input type="tel" id="studentMobile" placeholder="請輸入電話號碼" required>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label>姓名（父親）</label>
+                        <input type="text" id="studentFatherName" placeholder="父親姓名">
+                    </div>
+                    <div class="form-group">
+                        <label>電話（父親）</label>
+                        <input type="tel" id="studentFatherPhone" placeholder="父親電話">
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label>姓名（母親）</label>
+                        <input type="text" id="studentMotherName" placeholder="母親姓名">
+                    </div>
+                    <div class="form-group">
+                        <label>電話（母親）</label>
+                        <input type="tel" id="studentMotherPhone" placeholder="母親電話">
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label>其他聯絡人</label>
+                        <input type="text" id="studentOtherContact" placeholder="其他聯絡人姓名">
+                    </div>
+                    <div class="form-group">
+                        <label>電話（其他聯絡人）</label>
+                        <input type="tel" id="studentOtherContactPhone" placeholder="其他聯絡人電話">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Birth</label>
+                    <input type="date" id="studentBirth">
+                </div>
+                <div class="form-group">
+                    <label>可補習日子</label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;" id="daysCheckboxGroup">
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="checkbox" value="星期一"> 星期一
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="checkbox" value="星期二"> 星期二
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="checkbox" value="星期三"> 星期三
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="checkbox" value="星期四"> 星期四
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="checkbox" value="星期五"> 星期五
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="checkbox" value="星期六"> 星期六
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>校外活動</label>
+                    <div id="extracurricularContainer">
+                    </div>
+                    <button type="button" onclick="addExtraRow()" style="background:#3498db; color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; font-size:0.9em; margin-top:4px;">➕ 新增活動</button>
+                </div>
+                <div class="form-group">
+                    <label>留班記錄</label>
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="retained" value="no" checked onchange="toggleRetainedGrade(false)"> 無留班
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="retained" value="yes" onchange="toggleRetainedGrade(true)"> 有留班
+                        </label>
+                        <span style="color:#999; font-size:0.85em;">留班年級：</span>
+                        <select id="studentRetainedGrade" disabled style="padding:8px; border:2px solid #e0e0e0; border-radius:8px; font-size:0.9em;">
+                            <option value="">請選擇</option>
+                            <option value="小一">小一</option>
+                            <option value="小二">小二</option>
+                            <option value="小三">小三</option>
+                            <option value="小四">小四</option>
+                            <option value="小五">小五</option>
+                            <option value="小六">小六</option>
+                            <option value="中一">中一</option>
+                            <option value="中二">中二</option>
+                            <option value="中三">中三</option>
+                            <option value="中四">中四</option>
+                            <option value="中五">中五</option>
+                            <option value="中六">中六</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="closeStudentFormModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">💾 保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCvt2qtx9HMYHZKc4C8GzI2G8vlxqIJoOc",
@@ -330,6 +487,11 @@
         let localStorageKey = 'sharedCalendarEvents_A';
         let calendarB_Events = {}; 
         let ownerFilter = null; 
+        
+        // 學生報名
+        let students = {};
+        let studentsRef = null;
+        let editingStudentId = null;
 
         const calendarConfigs = {
             calendarA: { 
@@ -354,6 +516,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             setupFirebaseListener();
             fetchCalendarBData();
+            initStudents();
         });
 
         function toggleCalendarMode() {
@@ -747,6 +910,254 @@
                         showToast('刪除失敗，請檢查網路', 'error');
                     }
                 });
+        }
+
+        // ========== 學生報名功能 ==========
+        function initStudents() {
+            studentsRef = database.ref('students');
+            studentsRef.on('value', (snapshot) => {
+                students = snapshot.val() || {};
+                renderStudentTable();
+                updateStatus(isConnected);
+            }, (error) => {
+                console.error('[Firebase] 學生資料讀取錯誤:', error);
+            });
+        }
+
+        function openStudentList() {
+            renderStudentTable();
+            document.getElementById('studentListModal').classList.add('active');
+        }
+
+        function closeStudentListModal() {
+            document.getElementById('studentListModal').classList.remove('active');
+        }
+
+        // ===== Helper: get available days from checkboxes =====
+        function getAvailableDays() {
+            const checks = document.querySelectorAll('#daysCheckboxGroup input[type=checkbox]');
+            return Array.from(checks).filter(c => c.checked).map(c => c.value);
+        }
+
+        // ===== Helper: get extracurricular activities =====
+        function getExtraActivities() {
+            const rows = document.querySelectorAll('#extracurricularContainer .extra-row');
+            return Array.from(rows).map(row => ({
+                day: row.querySelector('select').value,
+                content: row.querySelector('input[type=text]').value.trim()
+            })).filter(r => r.content !== '');
+        }
+
+        // ===== Add/remove extracurricular rows =====
+        function addExtraRow() {
+            const container = document.getElementById('extracurricularContainer');
+            const row = document.createElement('div');
+            row.className = 'extra-row';
+            row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px;';
+            row.innerHTML = `
+                <select style="flex:0 0 100px; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
+                    <option value="星期一">星期一</option>
+                    <option value="星期二">星期二</option>
+                    <option value="星期三">星期三</option>
+                    <option value="星期四">星期四</option>
+                    <option value="星期五">星期五</option>
+                    <option value="星期六">星期六</option>
+                </select>
+                <input type="text" placeholder="活動內容" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
+                <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✕</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeExtraRow(btn) {
+            const row = btn.closest('.extra-row');
+            if (row) row.remove();
+        }
+
+        // ===== Toggle retained grade select =====
+        function toggleRetainedGrade(show) {
+            document.getElementById('studentRetainedGrade').disabled = !show;
+        }
+
+        function renderStudentTable() {
+            const tbody = document.getElementById('studentTableBody');
+            const noData = document.getElementById('noStudentData');
+            const count = document.getElementById('studentCount');
+            if (!tbody) return;
+            const list = Object.values(students);
+            if (list.length === 0) {
+                tbody.innerHTML = '';
+                if (noData) noData.style.display = 'block';
+                if (count) count.textContent = '';
+                return;
+            }
+            if (noData) noData.style.display = 'none';
+            if (count) count.textContent = `共 ${list.length} 筆資料`;
+            list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            tbody.innerHTML = list.map(s => `
+                <tr>
+                    <td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold;">${s.chineseName || ''}</td>
+                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.englishName || '-'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.mobile || '-'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #eee; font-size:0.8em;">${(s.availableDays || []).join('、') || '-'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.retained === 'yes' ? '✅ 留班' + (s.retainedGrade || '') : '❌ 無'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #eee; text-align:center;">
+                        <button class="edit-btn" onclick="editStudent('${s.id}')" style="padding:4px 10px;">編輯</button>
+                        <button class="delete-btn" onclick="deleteStudent('${s.id}')" style="padding:4px 10px;">刪除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function showStudentForm() {
+            editingStudentId = null;
+            document.getElementById('studentFormTitle').textContent = '新增報名';
+            document.getElementById('studentForm').reset();
+            document.getElementById('extracurricularContainer').innerHTML = '';
+            toggleRetainedGrade(false);
+            document.getElementById('studentFormModal').classList.add('active');
+        }
+
+        function closeStudentFormModal() {
+            document.getElementById('studentFormModal').classList.remove('active');
+            editingStudentId = null;
+        }
+
+        function saveStudent(e) {
+            e.preventDefault();
+            const id = editingStudentId || Date.now().toString();
+            const retained = document.querySelector('input[name="retained"]:checked');
+            const studentData = {
+                id,
+                chineseName: document.getElementById('studentChineseName').value.trim(),
+                transliteration: document.getElementById('studentTransliteration').value.trim(),
+                englishName: document.getElementById('studentEnglishName').value.trim(),
+                mobile: document.getElementById('studentMobile').value.trim(),
+                fatherName: document.getElementById('studentFatherName').value.trim(),
+                fatherPhone: document.getElementById('studentFatherPhone').value.trim(),
+                motherName: document.getElementById('studentMotherName').value.trim(),
+                motherPhone: document.getElementById('studentMotherPhone').value.trim(),
+                otherContact: document.getElementById('studentOtherContact').value.trim(),
+                otherContactPhone: document.getElementById('studentOtherContactPhone').value.trim(),
+                birth: document.getElementById('studentBirth').value,
+                availableDays: getAvailableDays(),
+                extracurricular: getExtraActivities(),
+                retained: retained ? retained.value : 'no',
+                retainedGrade: retained && retained.value === 'yes' ? document.getElementById('studentRetainedGrade').value : '',
+                registerDate: editingStudentId ? (students[id]?.registerDate || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+                createdAt: editingStudentId ? (students[id]?.createdAt || Date.now()) : Date.now()
+            };
+
+            studentsRef.child(id).set(studentData)
+                .then(() => {
+                    showToast('已保存', 'success');
+                    closeStudentFormModal();
+                })
+                .catch((err) => {
+                    console.error('學生資料儲存失敗', err);
+                    showToast('儲存失敗，請檢查網路', 'error');
+                });
+        }
+
+        function editStudent(id) {
+            const s = students[id];
+            if (!s) return;
+            editingStudentId = id;
+            document.getElementById('studentFormTitle').textContent = '編輯報名';
+            document.getElementById('studentChineseName').value = s.chineseName || '';
+            document.getElementById('studentTransliteration').value = s.transliteration || '';
+            document.getElementById('studentEnglishName').value = s.englishName || '';
+            document.getElementById('studentMobile').value = s.mobile || '';
+            document.getElementById('studentFatherName').value = s.fatherName || '';
+            document.getElementById('studentFatherPhone').value = s.fatherPhone || '';
+            document.getElementById('studentMotherName').value = s.motherName || '';
+            document.getElementById('studentMotherPhone').value = s.motherPhone || '';
+            document.getElementById('studentOtherContact').value = s.otherContact || '';
+            document.getElementById('studentOtherContactPhone').value = s.otherContactPhone || '';
+            document.getElementById('studentBirth').value = s.birth || '';
+            // Checkboxes
+            const days = s.availableDays || [];
+            document.querySelectorAll('#daysCheckboxGroup input[type=checkbox]').forEach(c => {
+                c.checked = days.includes(c.value);
+            });
+            // Extracurricular
+            const container = document.getElementById('extracurricularContainer');
+            container.innerHTML = '';
+            const extras = s.extracurricular || [];
+            extras.forEach(ex => {
+                const row = document.createElement('div');
+                row.className = 'extra-row';
+                row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px;';
+                row.innerHTML = `
+                    <select style="flex:0 0 100px; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
+                        <option value="星期一"${ex.day === '星期一' ? ' selected' : ''}>星期一</option>
+                        <option value="星期二"${ex.day === '星期二' ? ' selected' : ''}>星期二</option>
+                        <option value="星期三"${ex.day === '星期三' ? ' selected' : ''}>星期三</option>
+                        <option value="星期四"${ex.day === '星期四' ? ' selected' : ''}>星期四</option>
+                        <option value="星期五"${ex.day === '星期五' ? ' selected' : ''}>星期五</option>
+                        <option value="星期六"${ex.day === '星期六' ? ' selected' : ''}>星期六</option>
+                    </select>
+                    <input type="text" placeholder="活動內容" value="${ex.content || ''}" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
+                    <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✕</button>
+                `;
+                container.appendChild(row);
+            });
+            // Retained
+            const retainedVal = s.retained || 'no';
+            document.querySelectorAll('input[name="retained"]').forEach(r => {
+                r.checked = r.value === retainedVal;
+            });
+            toggleRetainedGrade(retainedVal === 'yes');
+            document.getElementById('studentRetainedGrade').value = s.retainedGrade || '';
+            document.getElementById('studentFormModal').classList.add('active');
+        }
+
+        function deleteStudent(id) {
+            if (!confirm('確定要刪除此學生報名嗎？此操作無法復原。')) return;
+            studentsRef.child(id).remove()
+                .then(() => showToast('已刪除', 'success'))
+                .catch((err) => {
+                    console.error('刪除失敗', err);
+                    showToast('刪除失敗，請檢查網路', 'error');
+                });
+        }
+
+        function exportToExcel() {
+            const list = Object.values(students);
+            if (list.length === 0) {
+                showToast('暫無資料可匯出', 'error');
+                return;
+            }
+            const data = list.map(s => ({
+                '中文姓名': s.chineseName || '',
+                '中文姓名譯音': s.transliteration || '',
+                'English Name': s.englishName || '',
+                'Mobile No': s.mobile || '',
+                '姓名(父親)': s.fatherName || '',
+                '電話(父親)': s.fatherPhone || '',
+                '姓名(母親)': s.motherName || '',
+                '電話(母親)': s.motherPhone || '',
+                '其他聯絡人': s.otherContact || '',
+                '電話(其他聯絡人)': s.otherContactPhone || '',
+                'Birth': s.birth || '',
+                '可補習日子': (s.availableDays || []).join('、'),
+                '校外活動': (s.extracurricular || []).map(e => `${e.day}:${e.content}`).join('; '),
+                '留班': s.retained === 'yes' ? '有' : '無',
+                '留班年級': s.retainedGrade || '',
+                '登記日期': s.registerDate || ''
+            }));
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, '學生報名');
+            const colWidths = [
+                { wch: 12 }, { wch: 16 }, { wch: 14 },
+                { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 14 },
+                { wch: 12 }, { wch: 14 }, { wch: 14 },
+                { wch: 20 }, { wch: 30 }, { wch: 8 }, { wch: 10 }, { wch: 12 }, { wch: 10 }
+            ];
+            ws['!cols'] = colWidths;
+            XLSX.writeFile(wb, `學生報名表_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast(`已匯出 ${data.length} 筆資料`, 'success');
         }
 
         function showToast(message, type) {
