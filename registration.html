@@ -39,7 +39,7 @@
             padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
         .count-label { color: #666; font-size: 0.95em; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 0.85em; }
         th { padding: 10px 8px; text-align: left; border-bottom: 2px solid #ddd; background: #f0f0f0; }
         td { padding: 8px; border-bottom: 1px solid #eee; }
         tr:hover td { background: #f6f8ff; }
@@ -95,7 +95,6 @@
         @media (max-width: 768px) {
             body { padding: 10px; }
             .header { flex-direction: column; }
-            th:nth-child(3), td:nth-child(3) { display: none; }
         }
     </style>
 </head>
