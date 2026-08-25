@@ -316,6 +316,9 @@
             <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
                 <button class="btn btn-primary" onclick="showStudentForm()">➕ 新增報名</button>
                 <button class="btn" style="background:#27ae60; color:white;" onclick="exportToExcel()">📥 匯出 Excel</button>
+                <button class="btn" style="background:#8e44ad; color:white;" onclick="document.getElementById('importFileInput').click()">📤 匯入 Excel</button>
+                <button class="btn" style="background:#c0392b; color:white;" onclick="clearAllStudents()">🗑️ 一鍵清空</button>
+                <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleImportFile(this)">
                 <span id="studentCount" style="display:flex; align-items:center; color:#666; font-size:0.9em;"></span>
             </div>
             <div style="overflow-x:auto;">
@@ -324,6 +327,7 @@
                         <tr style="background:#f0f0f0;">
                             <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">中文姓名</th>
                             <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">English Name</th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Class</th>
                             <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Mobile</th>
                             <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">可補習日子</th>
                             <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">留班</th>
@@ -345,7 +349,7 @@
                 <button class="close-btn" onclick="closeStudentFormModal()">&times;</button>
             </div>
             <form id="studentForm" onsubmit="saveStudent(event)">
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="form-group">
                         <label>中文姓名 *</label>
                         <input type="text" id="studentChineseName" placeholder="中文姓名" required>
@@ -357,6 +361,10 @@
                     <div class="form-group">
                         <label>English Name</label>
                         <input type="text" id="studentEnglishName" placeholder="English Name">
+                    </div>
+                    <div class="form-group">
+                        <label>Class（年級）</label>
+                        <input type="text" id="studentClass" placeholder="例如：F1A">
                     </div>
                 </div>
                 <div class="form-group">
@@ -401,22 +409,22 @@
                     <label>可補習日子</label>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;" id="daysCheckboxGroup">
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="checkbox" value="星期一"> 星期一
+                            <input type="checkbox" value="Mon"> Mon
                         </label>
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="checkbox" value="星期二"> 星期二
+                            <input type="checkbox" value="Tue"> Tue
                         </label>
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="checkbox" value="星期三"> 星期三
+                            <input type="checkbox" value="Wed"> Wed
                         </label>
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="checkbox" value="星期四"> 星期四
+                            <input type="checkbox" value="Thu"> Thu
                         </label>
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="checkbox" value="星期五"> 星期五
+                            <input type="checkbox" value="Fri"> Fri
                         </label>
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="checkbox" value="星期六"> 星期六
+                            <input type="checkbox" value="Sat"> Sat
                         </label>
                     </div>
                 </div>
@@ -956,12 +964,12 @@
             row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px;';
             row.innerHTML = `
                 <select style="flex:0 0 100px; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
-                    <option value="星期一">星期一</option>
-                    <option value="星期二">星期二</option>
-                    <option value="星期三">星期三</option>
-                    <option value="星期四">星期四</option>
-                    <option value="星期五">星期五</option>
-                    <option value="星期六">星期六</option>
+                    <option value="Mon">Mon</option>
+                    <option value="Tue">Tue</option>
+                    <option value="Wed">Wed</option>
+                    <option value="Thu">Thu</option>
+                    <option value="Fri">Fri</option>
+                    <option value="Sat">Sat</option>
                 </select>
                 <input type="text" placeholder="活動內容" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
                 <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✕</button>
@@ -998,6 +1006,7 @@
                 <tr>
                     <td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold;">${s.chineseName || ''}</td>
                     <td style="padding:8px; border-bottom:1px solid #eee;">${s.englishName || '-'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.class || '-'}</td>
                     <td style="padding:8px; border-bottom:1px solid #eee;">${s.mobile || '-'}</td>
                     <td style="padding:8px; border-bottom:1px solid #eee; font-size:0.8em;">${(s.availableDays || []).join('、') || '-'}</td>
                     <td style="padding:8px; border-bottom:1px solid #eee;">${s.retained === 'yes' ? '✅ 留班' + (s.retainedGrade || '') : '❌ 無'}</td>
@@ -1032,6 +1041,7 @@
                 chineseName: document.getElementById('studentChineseName').value.trim(),
                 transliteration: document.getElementById('studentTransliteration').value.trim(),
                 englishName: document.getElementById('studentEnglishName').value.trim(),
+                class: document.getElementById('studentClass').value.trim(),
                 mobile: document.getElementById('studentMobile').value.trim(),
                 fatherName: document.getElementById('studentFatherName').value.trim(),
                 fatherPhone: document.getElementById('studentFatherPhone').value.trim(),
@@ -1067,6 +1077,7 @@
             document.getElementById('studentChineseName').value = s.chineseName || '';
             document.getElementById('studentTransliteration').value = s.transliteration || '';
             document.getElementById('studentEnglishName').value = s.englishName || '';
+            document.getElementById('studentClass').value = s.class || '';
             document.getElementById('studentMobile').value = s.mobile || '';
             document.getElementById('studentFatherName').value = s.fatherName || '';
             document.getElementById('studentFatherPhone').value = s.fatherPhone || '';
@@ -1090,12 +1101,12 @@
                 row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px;';
                 row.innerHTML = `
                     <select style="flex:0 0 100px; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
-                        <option value="星期一"${ex.day === '星期一' ? ' selected' : ''}>星期一</option>
-                        <option value="星期二"${ex.day === '星期二' ? ' selected' : ''}>星期二</option>
-                        <option value="星期三"${ex.day === '星期三' ? ' selected' : ''}>星期三</option>
-                        <option value="星期四"${ex.day === '星期四' ? ' selected' : ''}>星期四</option>
-                        <option value="星期五"${ex.day === '星期五' ? ' selected' : ''}>星期五</option>
-                        <option value="星期六"${ex.day === '星期六' ? ' selected' : ''}>星期六</option>
+                        <option value="Mon"${ex.day === 'Mon' || ex.day === '星期一' ? ' selected' : ''}>Mon</option>
+                        <option value="Tue"${ex.day === 'Tue' || ex.day === '星期二' ? ' selected' : ''}>Tue</option>
+                        <option value="Wed"${ex.day === 'Wed' || ex.day === '星期三' ? ' selected' : ''}>Wed</option>
+                        <option value="Thu"${ex.day === 'Thu' || ex.day === '星期四' ? ' selected' : ''}>Thu</option>
+                        <option value="Fri"${ex.day === 'Fri' || ex.day === '星期五' ? ' selected' : ''}>Fri</option>
+                        <option value="Sat"${ex.day === 'Sat' || ex.day === '星期六' ? ' selected' : ''}>Sat</option>
                     </select>
                     <input type="text" placeholder="活動內容" value="${ex.content || ''}" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
                     <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✕</button>
@@ -1122,6 +1133,22 @@
                 });
         }
 
+        function clearAllStudents() {
+            const count = Object.keys(students).length;
+            if (count === 0) {
+                showToast('目前沒有學生資料', 'info');
+                return;
+            }
+            if (!confirm(`確定要清空全部 ${count} 筆學生資料嗎？`)) return;
+            if (!confirm('⚠️ 最後確認：此操作會永久刪除所有學生報名資料，無法復原！')) return;
+            studentsRef.remove()
+                .then(() => showToast('已清空所有學生資料', 'success'))
+                .catch((err) => {
+                    console.error('清空失敗', err);
+                    showToast('清空失敗，請檢查網路', 'error');
+                });
+        }
+
         function exportToExcel() {
             const list = Object.values(students);
             if (list.length === 0) {
@@ -1132,6 +1159,7 @@
                 '中文姓名': s.chineseName || '',
                 '中文姓名譯音': s.transliteration || '',
                 'English Name': s.englishName || '',
+                'Class': s.class || '',
                 'Mobile No': s.mobile || '',
                 '姓名(父親)': s.fatherName || '',
                 '電話(父親)': s.fatherPhone || '',
@@ -1158,6 +1186,150 @@
             ws['!cols'] = colWidths;
             XLSX.writeFile(wb, `學生報名表_${new Date().toISOString().slice(0,10)}.xlsx`);
             showToast(`已匯出 ${data.length} 筆資料`, 'success');
+        }
+
+        // ===== Excel 匯入功能 =====
+        function normHeader(s) {
+            return String(s || '').replace(/\s+/g, '').replace(/（/g, '(').replace(/）/g, ')').toLowerCase();
+        }
+
+        function importCellStr(v) {
+            if (v instanceof Date) {
+                return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
+            }
+            return (v === null || v === undefined) ? '' : String(v).trim();
+        }
+
+        function handleImportFile(input) {
+            const file = input.files[0];
+            input.value = '';
+            if (!file) return;
+            const clearExisting = confirm('匯入方式：\n\n「確定」＝ 清空現有學生資料後匯入\n「取消」＝ 保留現有資料，附加匯入');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    processImportWorkbook(new Uint8Array(e.target.result), clearExisting);
+                } catch (err) {
+                    console.error('匯入失敗', err);
+                    showToast('匯入失敗：無法讀取檔案', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processImportWorkbook(data, clearExisting) {
+            const wb = XLSX.read(data, { type: 'array', cellDates: true });
+            let rows = null;
+            for (const name of wb.SheetNames) {
+                const r = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', cellDates: true });
+                if (r.some(row => row.some(c => normHeader(c) === '中文名'))) {
+                    rows = r;
+                    break;
+                }
+            }
+            if (!rows) {
+                showToast('找不到「中文名」標題列，請確認是報名表格式', 'error');
+                return;
+            }
+
+            const headerIdx = rows.findIndex(row => row.some(c => normHeader(c) === '中文名'));
+            const headers = rows[headerIdx].map(normHeader);
+            const col = (...names) => {
+                for (const n of names) {
+                    const idx = headers.indexOf(normHeader(n));
+                    if (idx >= 0) return idx;
+                }
+                return -1;
+            };
+
+            const cMap = {
+                chineseName: col('中文名'),
+                transliteration: col('譯名'),
+                englishName: col('name'),
+                class: col('class'),
+                mobile: col('mobile no.', 'mobile'),
+                fatherName: col('姓名(父親)'),
+                fatherPhone: col('電話(父親)'),
+                motherName: col('姓名(母親)'),
+                motherPhone: col('電話(母親)'),
+                otherContact: col('其他聯絡人', '其他'),
+                otherContactPhone: col('電話(其他聯絡人)', '電話(其他)'),
+                birth: col('birth')
+            };
+
+            const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayCols = DAY_LABELS.map(label => ({
+                label,
+                idx: headers.indexOf(normHeader(label))
+            }));
+            const FULL_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const actCols = FULL_DAYS.map((d, i) => ({
+                label: DAY_LABELS[i],
+                idx: headers.indexOf(d)
+            }));
+
+            const baseTs = Date.now();
+            const records = {};
+            let imported = 0;
+
+            for (let i = headerIdx + 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.every(c => importCellStr(c) === '')) continue;
+                const get = (idx) => idx >= 0 ? importCellStr(row[idx]) : '';
+                const chineseName = get(cMap.chineseName);
+                const englishName = get(cMap.englishName);
+                const mobile = get(cMap.mobile);
+                if (!chineseName && !englishName && !mobile) continue;
+
+                const availableDays = dayCols.filter(dc => dc.idx >= 0 && get(dc.idx) !== '').map(dc => dc.label);
+                const extracurricular = [];
+                actCols.forEach(ac => {
+                    if (ac.idx >= 0) {
+                        const content = get(ac.idx);
+                        if (content) extracurricular.push({ day: ac.label, content });
+                    }
+                });
+
+                const id = `${baseTs}_${i}`;
+                records[id] = {
+                    id,
+                    chineseName,
+                    transliteration: get(cMap.transliteration),
+                    englishName,
+                    class: get(cMap.class),
+                    mobile,
+                    fatherName: get(cMap.fatherName),
+                    fatherPhone: get(cMap.fatherPhone),
+                    motherName: get(cMap.motherName),
+                    motherPhone: get(cMap.motherPhone),
+                    otherContact: get(cMap.otherContact),
+                    otherContactPhone: get(cMap.otherContactPhone),
+                    birth: get(cMap.birth),
+                    availableDays,
+                    extracurricular,
+                    retained: 'no',
+                    retainedGrade: '',
+                    registerDate: new Date().toISOString().slice(0, 10),
+                    createdAt: baseTs + imported
+                };
+                imported++;
+            }
+
+            if (imported === 0) {
+                showToast('沒有找到可匯入的學生資料', 'error');
+                return;
+            }
+
+            const doneMsg = () => showToast(`成功匯入 ${imported} 筆學生資料`, 'success');
+            const failMsg = (err) => {
+                console.error('匯入失敗', err);
+                showToast('匯入失敗，請檢查網路連線', 'error');
+            };
+            if (clearExisting) {
+                studentsRef.set(records).then(doneMsg).catch(failMsg);
+            } else {
+                studentsRef.update(records).then(doneMsg).catch(failMsg);
+            }
         }
 
         function showToast(message, type) {
