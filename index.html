@@ -6,7 +6,7 @@
     <title>雙重共享日程系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -370,6 +370,20 @@
                 <div class="form-group">
                     <label>Mobile No *</label>
                     <input type="tel" id="studentMobile" placeholder="請輸入電話號碼" required>
+                </div>
+                <div class="form-group">
+                    <label>主要聯絡人</label>
+                    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="primaryContact" value="father" checked> 父親
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="primaryContact" value="mother"> 母親
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="primaryContact" value="other"> 其他聯絡人
+                        </label>
+                    </div>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="form-group">
@@ -1049,6 +1063,7 @@
                 motherPhone: document.getElementById('studentMotherPhone').value.trim(),
                 otherContact: document.getElementById('studentOtherContact').value.trim(),
                 otherContactPhone: document.getElementById('studentOtherContactPhone').value.trim(),
+                primaryContact: (document.querySelector('input[name="primaryContact"]:checked') || {}).value || 'father',
                 birth: document.getElementById('studentBirth').value,
                 availableDays: getAvailableDays(),
                 extracurricular: getExtraActivities(),
@@ -1085,6 +1100,10 @@
             document.getElementById('studentMotherPhone').value = s.motherPhone || '';
             document.getElementById('studentOtherContact').value = s.otherContact || '';
             document.getElementById('studentOtherContactPhone').value = s.otherContactPhone || '';
+            const pc = s.primaryContact || 'father';
+            document.querySelectorAll('input[name="primaryContact"]').forEach(r => {
+                r.checked = r.value === pc;
+            });
             document.getElementById('studentBirth').value = s.birth || '';
             // Checkboxes
             const days = s.availableDays || [];
@@ -1149,43 +1168,80 @@
                 });
         }
 
-        function exportToExcel() {
-            const list = Object.values(students);
-            if (list.length === 0) {
-                showToast('暫無資料可匯出', 'error');
-                return;
+        async function exportToExcel() {
+            try {
+                const list = Object.values(students);
+                if (list.length === 0) {
+                    showToast('暫無資料可匯出', 'error');
+                    return;
+                }
+                const wb = new ExcelJS.Workbook();
+                const ws = wb.addWorksheet('學生報名');
+                ws.columns = [
+                    { header: '中文姓名', key: 'chineseName', width: 12 },
+                    { header: '中文姓名譯音', key: 'transliteration', width: 16 },
+                    { header: 'English Name', key: 'englishName', width: 16 },
+                    { header: 'Class', key: 'class', width: 10 },
+                    { header: 'Mobile No', key: 'mobile', width: 14 },
+                    { header: '姓名(父親)', key: 'fatherName', width: 12 },
+                    { header: '電話(父親)', key: 'fatherPhone', width: 14 },
+                    { header: '姓名(母親)', key: 'motherName', width: 12 },
+                    { header: '電話(母親)', key: 'motherPhone', width: 14 },
+                    { header: '其他聯絡人', key: 'otherContact', width: 12 },
+                    { header: '電話(其他聯絡人)', key: 'otherContactPhone', width: 14 },
+                    { header: 'Birth', key: 'birth', width: 14 },
+                    { header: '可補習日子', key: 'availableDays', width: 20 },
+                    { header: '校外活動', key: 'extracurricular', width: 30 },
+                    { header: '留班', key: 'retainedLabel', width: 8 },
+                    { header: '留班年級', key: 'retainedGrade', width: 10 },
+                    { header: '登記日期', key: 'registerDate', width: 12 }
+                ];
+                list.forEach(s => {
+                    ws.addRow({
+                        chineseName: s.chineseName || '',
+                        transliteration: s.transliteration || '',
+                        englishName: s.englishName || '',
+                        class: s.class || '',
+                        mobile: s.mobile || '',
+                        fatherName: s.fatherName || '',
+                        fatherPhone: s.fatherPhone || '',
+                        motherName: s.motherName || '',
+                        motherPhone: s.motherPhone || '',
+                        otherContact: s.otherContact || '',
+                        otherContactPhone: s.otherContactPhone || '',
+                        birth: s.birth || '',
+                        availableDays: (s.availableDays || []).join('、'),
+                        extracurricular: (s.extracurricular || []).map(e => `${e.day}:${e.content}`).join('; '),
+                        retainedLabel: s.retained === 'yes' ? '有' : '無',
+                        retainedGrade: s.retainedGrade || '',
+                        registerDate: s.registerDate || ''
+                    });
+                });
+                // 主要聯絡人姓名與電話以紅色字體輸出（欄位：6=父名,7=父電,8=母名,9=母電,10=其他,11=其他電話）
+                const PRIMARY_COLS = { father: [6, 7], mother: [8, 9], other: [10, 11] };
+                ws.eachRow((row, rowNum) => {
+                    if (rowNum === 1) return;
+                    const s = list[rowNum - 2];
+                    const cols = PRIMARY_COLS[s.primaryContact || 'father'];
+                    cols.forEach(cn => {
+                        row.getCell(cn).font = { color: { argb: 'FFFF0000' } };
+                    });
+                });
+                const buf = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `學生報名表_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast(`已匯出 ${list.length} 筆資料`, 'success');
+            } catch (err) {
+                console.error('匯出失敗', err);
+                showToast('匯出失敗，請重試', 'error');
             }
-            const data = list.map(s => ({
-                '中文姓名': s.chineseName || '',
-                '中文姓名譯音': s.transliteration || '',
-                'English Name': s.englishName || '',
-                'Class': s.class || '',
-                'Mobile No': s.mobile || '',
-                '姓名(父親)': s.fatherName || '',
-                '電話(父親)': s.fatherPhone || '',
-                '姓名(母親)': s.motherName || '',
-                '電話(母親)': s.motherPhone || '',
-                '其他聯絡人': s.otherContact || '',
-                '電話(其他聯絡人)': s.otherContactPhone || '',
-                'Birth': s.birth || '',
-                '可補習日子': (s.availableDays || []).join('、'),
-                '校外活動': (s.extracurricular || []).map(e => `${e.day}:${e.content}`).join('; '),
-                '留班': s.retained === 'yes' ? '有' : '無',
-                '留班年級': s.retainedGrade || '',
-                '登記日期': s.registerDate || ''
-            }));
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(data);
-            XLSX.utils.book_append_sheet(wb, ws, '學生報名');
-            const colWidths = [
-                { wch: 12 }, { wch: 16 }, { wch: 14 },
-                { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 14 },
-                { wch: 12 }, { wch: 14 }, { wch: 14 },
-                { wch: 20 }, { wch: 30 }, { wch: 8 }, { wch: 10 }, { wch: 12 }, { wch: 10 }
-            ];
-            ws['!cols'] = colWidths;
-            XLSX.writeFile(wb, `學生報名表_${new Date().toISOString().slice(0,10)}.xlsx`);
-            showToast(`已匯出 ${data.length} 筆資料`, 'success');
         }
 
         // ===== Excel 匯入功能 =====
@@ -1194,10 +1250,17 @@
         }
 
         function importCellStr(v) {
+            if (v === null || v === undefined) return '';
             if (v instanceof Date) {
                 return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
             }
-            return (v === null || v === undefined) ? '' : String(v).trim();
+            if (typeof v === 'object') {
+                if (Array.isArray(v.richText)) return v.richText.map(rt => rt.text || '').join('').trim();
+                if (v.text !== undefined && v.text !== null) return String(v.text).trim();
+                if (v.result !== undefined && v.result !== null) return importCellStr(v.result);
+                return '';
+            }
+            return String(v).trim();
         }
 
         function handleImportFile(input) {
@@ -1207,37 +1270,56 @@
             const clearExisting = confirm('匯入方式：\n\n「確定」＝ 清空現有學生資料後匯入\n「取消」＝ 保留現有資料，附加匯入');
             const reader = new FileReader();
             reader.onload = (e) => {
-                try {
-                    processImportWorkbook(new Uint8Array(e.target.result), clearExisting);
-                } catch (err) {
+                processImportWorkbook(e.target.result, clearExisting).catch((err) => {
                     console.error('匯入失敗', err);
                     showToast('匯入失敗：無法讀取檔案', 'error');
-                }
+                });
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function processImportWorkbook(data, clearExisting) {
-            const wb = XLSX.read(data, { type: 'array', cellDates: true });
-            let rows = null;
-            for (const name of wb.SheetNames) {
-                const r = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', cellDates: true });
-                if (r.some(row => row.some(c => normHeader(c) === '中文名'))) {
-                    rows = r;
-                    break;
+        function isRedFont(cell) {
+            const argb = cell && cell.font && cell.font.color && cell.font.color.argb;
+            if (typeof argb !== 'string') return false;
+            const tail = argb.toUpperCase().slice(-6);
+            if (tail.length < 6) return false;
+            const r = parseInt(tail.slice(0, 2), 16);
+            const g = parseInt(tail.slice(2, 4), 16);
+            const b = parseInt(tail.slice(4, 6), 16);
+            return r >= 128 && g <= 80 && b <= 80;
+        }
+
+        async function processImportWorkbook(data, clearExisting) {
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(data);
+
+            let targetWs = null;
+            let headerRowNum = 0;
+            let headerVals = [];
+            outer: for (const ws of workbook.worksheets) {
+                const maxScan = Math.min(ws.rowCount || 0, 20);
+                for (let r = 1; r <= maxScan; r++) {
+                    const vals = ws.getRow(r).values || [];
+                    if (vals.some(c => normHeader(importCellStr(c)) === '中文名')) {
+                        targetWs = ws;
+                        headerRowNum = r;
+                        headerVals = vals;
+                        break outer;
+                    }
                 }
             }
-            if (!rows) {
+            if (!targetWs) {
                 showToast('找不到「中文名」標題列，請確認是報名表格式', 'error');
                 return;
             }
 
-            const headerIdx = rows.findIndex(row => row.some(c => normHeader(c) === '中文名'));
-            const headers = rows[headerIdx].map(normHeader);
+            // ExcelJS 欄位編號由 1 開始
+            const headersN = [];
+            headerVals.forEach((v, idx) => { headersN[idx] = normHeader(importCellStr(v)); });
             const col = (...names) => {
                 for (const n of names) {
-                    const idx = headers.indexOf(normHeader(n));
-                    if (idx >= 0) return idx;
+                    const idx = headersN.indexOf(normHeader(n));
+                    if (idx >= 1) return idx;
                 }
                 return -1;
             };
@@ -1260,37 +1342,49 @@
             const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const dayCols = DAY_LABELS.map(label => ({
                 label,
-                idx: headers.indexOf(normHeader(label))
+                idx: headersN.indexOf(normHeader(label))
             }));
             const FULL_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
             const actCols = FULL_DAYS.map((d, i) => ({
                 label: DAY_LABELS[i],
-                idx: headers.indexOf(d)
+                idx: headersN.indexOf(d)
             }));
 
             const baseTs = Date.now();
             const records = {};
             let imported = 0;
+            let redCount = 0;
 
-            for (let i = headerIdx + 1; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.every(c => importCellStr(c) === '')) continue;
-                const get = (idx) => idx >= 0 ? importCellStr(row[idx]) : '';
+            const lastRow = targetWs.actualRowCount || targetWs.rowCount;
+            for (let r = headerRowNum + 1; r <= lastRow; r++) {
+                const row = targetWs.getRow(r);
+                const get = (cn) => cn > 0 ? importCellStr(row.getCell(cn).value) : '';
                 const chineseName = get(cMap.chineseName);
                 const englishName = get(cMap.englishName);
                 const mobile = get(cMap.mobile);
                 if (!chineseName && !englishName && !mobile) continue;
 
-                const availableDays = dayCols.filter(dc => dc.idx >= 0 && get(dc.idx) !== '').map(dc => dc.label);
+                const availableDays = dayCols.filter(dc => dc.idx > 0 && get(dc.idx) !== '').map(dc => dc.label);
                 const extracurricular = [];
                 actCols.forEach(ac => {
-                    if (ac.idx >= 0) {
+                    if (ac.idx > 0) {
                         const content = get(ac.idx);
                         if (content) extracurricular.push({ day: ac.label, content });
                     }
                 });
 
-                const id = `${baseTs}_${i}`;
+                const cellAt = (cn) => cn > 0 ? row.getCell(cn) : null;
+                const redFather = isRedFont(cellAt(cMap.fatherName)) || isRedFont(cellAt(cMap.fatherPhone));
+                const redMother = isRedFont(cellAt(cMap.motherName)) || isRedFont(cellAt(cMap.motherPhone));
+                const redOther = isRedFont(cellAt(cMap.otherContact)) || isRedFont(cellAt(cMap.otherContactPhone));
+                let primaryContact = 'father';
+                if (!redFather) {
+                    if (redMother) primaryContact = 'mother';
+                    else if (redOther) primaryContact = 'other';
+                }
+                if (redFather || redMother || redOther) redCount++;
+
+                const id = `${baseTs}_${r}`;
                 records[id] = {
                     id,
                     chineseName,
@@ -1304,6 +1398,7 @@
                     motherPhone: get(cMap.motherPhone),
                     otherContact: get(cMap.otherContact),
                     otherContactPhone: get(cMap.otherContactPhone),
+                    primaryContact,
                     birth: get(cMap.birth),
                     availableDays,
                     extracurricular,
@@ -1320,7 +1415,10 @@
                 return;
             }
 
-            const doneMsg = () => showToast(`成功匯入 ${imported} 筆學生資料`, 'success');
+            const doneMsg = () => showToast(
+                redCount > 0 ? `成功匯入 ${imported} 筆（${redCount} 筆偵測到紅色主要聯絡人）` : `成功匯入 ${imported} 筆學生資料`,
+                'success'
+            );
             const failMsg = (err) => {
                 console.error('匯入失敗', err);
                 showToast('匯入失敗，請檢查網路連線', 'error');
