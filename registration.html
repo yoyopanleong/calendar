@@ -179,6 +179,20 @@
                     <label>Mobile No *</label>
                     <input type="tel" id="studentMobile" placeholder="請輸入電話號碼" required>
                 </div>
+                <div class="form-group">
+                    <label>主要聯絡人</label>
+                    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="primaryContact" value="father" checked> 父親
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="primaryContact" value="mother"> 母親
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="primaryContact" value="other"> 其他聯絡人
+                        </label>
+                    </div>
+                </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="form-group">
                         <label>姓名（父親）</label>
@@ -438,6 +452,7 @@
                 motherPhone: document.getElementById('studentMotherPhone').value.trim(),
                 otherContact: document.getElementById('studentOtherContact').value.trim(),
                 otherContactPhone: document.getElementById('studentOtherContactPhone').value.trim(),
+                primaryContact: (document.querySelector('input[name="primaryContact"]:checked') || {}).value || 'father',
                 birth: document.getElementById('studentBirth').value,
                 availableDays: getAvailableDays(),
                 extracurricular: getExtraActivities(),
@@ -474,6 +489,10 @@
             document.getElementById('studentMotherPhone').value = s.motherPhone || '';
             document.getElementById('studentOtherContact').value = s.otherContact || '';
             document.getElementById('studentOtherContactPhone').value = s.otherContactPhone || '';
+            const pc = s.primaryContact || 'father';
+            document.querySelectorAll('input[name="primaryContact"]').forEach(r => {
+                r.checked = r.value === pc;
+            });
             document.getElementById('studentBirth').value = s.birth || '';
             const days = s.availableDays || [];
             document.querySelectorAll('#daysCheckboxGroup input[type=checkbox]').forEach(c => {
