@@ -169,7 +169,6 @@
         .event-info { flex: 1; }
         .event-info h4 { color: #333; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .event-info p { color: #666; font-size: 0.85em; }
-        .event-time { color: var(--accent-color); font-weight: bold; }
         .event-actions { display: flex; gap: 6px; }
         .event-actions button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; }
         .edit-btn { background: #3498db; color: white; }
@@ -228,6 +227,8 @@
                 <button class="nav-btn" onclick="nextMonth()">下月 ▶</button>
                 <button class="nav-btn today-btn" onclick="goToToday()">今天</button>
                 <button class="nav-btn" style="background:#e67e22;" onclick="openStudentList()">📋 學生報名</button>
+                <button class="nav-btn" style="background:#27ae60;" onclick="openExportRangeModal()">📥 匯出日程</button>
+                <button class="nav-btn" style="background:#2980b9;" onclick="triggerCalendarImport()">📤 匯入日程</button>
             </div>
             <div class="owner-filter-group">
                 <button class="owner-filter-btn" id="filter-gaspar" onclick="toggleOwnerFilter('gaspar')">Gaspar</button>
@@ -236,6 +237,8 @@
                 <button class="owner-filter-btn" id="filter-candy" onclick="toggleOwnerFilter('candy')">Candy</button>
             </div>
         </div>
+
+        <input type="file" id="calendarImportFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleCalendarImport(this)">
 
         <div class="calendar">
             <div class="weekdays">
@@ -282,10 +285,6 @@
                     <input type="text" id="eventTitle" placeholder="例如：微積分測驗" required>
                 </div>
                 <div class="form-group">
-                    <label>⏰ 時間</label>
-                    <input type="time" id="eventTime">
-                </div>
-                <div class="form-group">
                     <label>👤 負責人</label>
                     <select id="eventOwner">
                         <option value="yoyopan">yoyopan</option>
@@ -303,6 +302,33 @@
                     <button type="submit" class="btn btn-primary">💾 保存</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 匯出日程月份段 Modal -->
+    <div class="modal" id="exportRangeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📥 匯出日程</h2>
+                <button class="close-btn" onclick="closeExportRangeModal()">&times;</button>
+            </div>
+            <p style="margin-bottom:15px; color:#666; font-size:0.9em;">選擇要匯出的起始與結束月份（支援跨年份）</p>
+            <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px;">
+                <div class="form-group" style="flex:1; min-width:130px;">
+                    <label>起始月份</label>
+                    <select id="exportStartYear" style="width:100%; margin-bottom:6px;"></select>
+                    <select id="exportStartMonth" style="width:100%;"></select>
+                </div>
+                <div class="form-group" style="flex:1; min-width:130px;">
+                    <label>結束月份</label>
+                    <select id="exportEndYear" style="width:100%; margin-bottom:6px;"></select>
+                    <select id="exportEndMonth" style="width:100%;"></select>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="closeExportRangeModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="doExportCalendar()">📥 匯出</button>
+            </div>
         </div>
     </div>
 
@@ -797,7 +823,7 @@
             if (month < 0) { m = 11; y--; } else if (month > 11) { m = 0; y++; }
             const key = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
             let dayEvents = events[key] ? Object.values(events[key]) : [];
-            dayEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            dayEvents.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
             const totalCount = dayEvents.length;
             if (ownerFilter) {
                 dayEvents = dayEvents.filter(e => e.owner === ownerFilter);
@@ -848,11 +874,11 @@
                 list.innerHTML = '<div class="no-events">📭 沒有日程</div>'; 
                 return; 
             }
-            dayEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            dayEvents.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
             list.innerHTML = dayEvents.map(e => `
                 <div class="event-item">
                     <div class="event-info">
-                        <h4>${e.time ? `<span class="event-time">${e.time}</span>` : ''} ${e.title}
+                        <h4>${e.title}
                         <span class="owner-badge ${e.owner}">${e.owner}</span></h4>
                         ${e.description ? `<p>${e.description}</p>` : ''}
                     </div>
@@ -871,7 +897,6 @@
             if (!events[key]) events[key] = {};
             events[key][id] = {
                 id, title: document.getElementById('eventTitle').value,
-                time: document.getElementById('eventTime').value,
                 owner: document.getElementById('eventOwner').value,
                 description: document.getElementById('eventDescription').value
             };
@@ -886,7 +911,6 @@
             editingEventId = id;
             document.getElementById('eventModalTitle').textContent = '編輯日程';
             document.getElementById('eventTitle').value = ev.title || '';
-            document.getElementById('eventTime').value = ev.time || '';
             document.getElementById('eventOwner').value = ev.owner || 'yoyopan';
             document.getElementById('eventDescription').value = ev.description || '';
             document.getElementById('eventModal').classList.add('active');
@@ -1242,6 +1266,236 @@
                 console.error('匯出失敗', err);
                 showToast('匯出失敗，請重試', 'error');
             }
+        }
+
+        function openExportRangeModal() {
+            buildExportRangeOptions();
+            const curYear = currentDate.getFullYear();
+            const curMonth = currentDate.getMonth();
+            const yearSelS = document.getElementById('exportStartYear');
+            const yearSelE = document.getElementById('exportEndYear');
+            for (let y = curYear - 3; y <= curYear + 3; y++) {
+                yearSelS.add(new Option(y + '年', y));
+                yearSelE.add(new Option(y + '年', y));
+            }
+            yearSelS.value = curYear;
+            yearSelE.value = curYear;
+            document.getElementById('exportStartMonth').value = curMonth;
+            document.getElementById('exportEndMonth').value = curMonth;
+            document.getElementById('exportRangeModal').classList.add('active');
+        }
+
+        function closeExportRangeModal() {
+            document.getElementById('exportRangeModal').classList.remove('active');
+        }
+
+        function buildExportRangeOptions() {
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const sm = document.getElementById('exportStartMonth');
+            const em = document.getElementById('exportEndMonth');
+            sm.innerHTML = '';
+            em.innerHTML = '';
+            months.forEach((m, i) => {
+                sm.add(new Option(m, i));
+                em.add(new Option(m, i));
+            });
+        }
+
+        function doExportCalendar() {
+            const startYear = parseInt(document.getElementById('exportStartYear').value, 10);
+            const startMonth = parseInt(document.getElementById('exportStartMonth').value, 10);
+            const endYear = parseInt(document.getElementById('exportEndYear').value, 10);
+            const endMonth = parseInt(document.getElementById('exportEndMonth').value, 10);
+            if (startYear * 12 + startMonth > endYear * 12 + endMonth) {
+                showToast('結束月份必須晚於或等於起始月份', 'error');
+                return;
+            }
+            exportCalendarToExcel(startYear, startMonth, endYear, endMonth);
+            closeExportRangeModal();
+        }
+
+        async function exportCalendarToExcel(startYear, startMonth, endYear, endMonth) {
+            try {
+                const calName = calendarConfigs[currentCalendarId].name;
+                const startIdx = startYear * 12 + startMonth;
+                const endIdx = endYear * 12 + endMonth;
+                const allDates = Object.keys(events);
+                const filtered = [];
+                allDates.forEach(date => {
+                    const parts = date.split('-');
+                    if (parts.length !== 3) return;
+                    const y = parseInt(parts[0], 10);
+                    const m = parseInt(parts[1], 10) - 1;
+                    const idx = y * 12 + m;
+                    if (idx < startIdx || idx > endIdx) return;
+                    const evts = events[date] ? Object.values(events[date]) : [];
+                    evts.forEach(evt => {
+                        if (ownerFilter && evt.owner !== ownerFilter) return;
+                        filtered.push({ date: date, ...evt });
+                    });
+                });
+                if (filtered.length === 0) {
+                    showToast('所選月份段暫無日程可匯出', 'error');
+                    return;
+                }
+                const wb = new ExcelJS.Workbook();
+                const ws = wb.addWorksheet(calName);
+                ws.columns = [
+                    { header: '日期', key: 'date', width: 14 },
+                    { header: '事項', key: 'title', width: 30 },
+                    { header: '負責人', key: 'owner', width: 12 },
+                    { header: '備註', key: 'description', width: 40 }
+                ];
+                filtered.sort((a, b) => {
+                    if (a.date !== b.date) return a.date.localeCompare(b.date);
+                    return (a.title || '').localeCompare(b.title || '');
+                });
+                const OWNER_LABELS = { gaspar: 'Gaspar', yoyopan: 'Yoyopan', annie: 'Annie', candy: 'Candy' };
+                filtered.forEach(evt => {
+                    const d = new Date(evt.date + 'T00:00:00');
+                    ws.addRow({
+                        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+                        title: evt.title,
+                        owner: OWNER_LABELS[evt.owner] || evt.owner,
+                        description: evt.description || ''
+                    });
+                });
+                const buf = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${calName}_${startYear}-${String(startMonth + 1).padStart(2, '0')}~${endYear}-${String(endMonth + 1).padStart(2, '0')}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast(`已匯出 ${calName} ${filtered.length} 筆日程`, 'success');
+            } catch (err) {
+                console.error('匯出日程失敗', err);
+                showToast('匯出日程失敗，請重試', 'error');
+            }
+        }
+
+        // ===== 日程 Excel 匯入功能 =====
+        function triggerCalendarImport() {
+            document.getElementById('calendarImportFileInput').click();
+        }
+
+        function handleCalendarImport(input) {
+            const file = input.files[0];
+            input.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                importCalendarWorkbook(e.target.result).catch((err) => {
+                    console.error('匯入日程失敗', err);
+                    showToast('匯入日程失敗：無法讀取檔案', 'error');
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function importCalendarWorkbook(data) {
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(data);
+
+            const ws = workbook.worksheets[0];
+            if (!ws) {
+                showToast('無資料可匯入', 'error');
+                return;
+            }
+
+            const maxScan = Math.min(ws.rowCount || 0, 20);
+            let headerRowNum = 0;
+            let headerVals = [];
+            for (let r = 1; r <= maxScan; r++) {
+                const vals = ws.getRow(r).values || [];
+                if (vals.some(c => ['日期', '事項', '標題'].includes(normHeader(importCellStr(c))))) {
+                    headerRowNum = r;
+                    headerVals = vals;
+                    break;
+                }
+            }
+            if (!headerRowNum) {
+                showToast('找不到「日期」/「事項」標題列', 'error');
+                return;
+            }
+
+            const headersN = [];
+            headerVals.forEach((v, idx) => { headersN[idx] = normHeader(importCellStr(v)); });
+            const col = (...names) => {
+                for (const n of names) {
+                    const idx = headersN.indexOf(normHeader(n));
+                    if (idx >= 1) return idx;
+                }
+                return -1;
+            };
+
+            const dateCol = col('日期');
+            const titleCol = col('事項', '標題', 'title');
+            const ownerCol = col('負責人', 'owner');
+            const descCol = col('備註', 'description');
+
+            const OWNER_MAP = { gaspar: 'gaspar', yoyopan: 'yoyopan', annie: 'annie', candy: 'candy' };
+
+            const baseTs = Date.now();
+            const newEvents = {};
+            let imported = 0;
+            let skipped = 0;
+
+            const lastRow = ws.actualRowCount || ws.rowCount;
+            for (let r = headerRowNum + 1; r <= lastRow; r++) {
+                const row = ws.getRow(r);
+                const get = (cn) => cn > 0 ? importCellStr(row.getCell(cn).value) : '';
+                const dateStr = get(dateCol);
+                const title = get(titleCol);
+                if (!title || !dateStr) continue;
+
+                const dateMatch = String(dateStr).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+                if (!dateMatch) continue;
+                const y = parseInt(dateMatch[1], 10);
+                const m = parseInt(dateMatch[2], 10);
+                const d = parseInt(dateMatch[3], 10);
+                if (!y || !m || !d) continue;
+                const key = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+                const ownerRaw = get(ownerCol).toLowerCase();
+                const owner = OWNER_MAP[ownerRaw] || ownerRaw || 'yoyopan';
+                const desc = get(descCol);
+
+                const isDup = (existing) => existing.title === title && existing.owner === owner;
+
+                const existingList = events[key] ? Object.values(events[key]) : [];
+                if (existingList.some(isDup)) { skipped++; continue; }
+
+                const pendingList = newEvents[key] ? Object.values(newEvents[key]) : [];
+                if (pendingList.some(isDup)) { skipped++; continue; }
+
+                if (!newEvents[key]) newEvents[key] = {};
+                newEvents[key][`${baseTs}_${imported}`] = {
+                    id: `${baseTs}_${imported}`,
+                    title,
+                    owner,
+                    description: desc
+                };
+                imported++;
+            }
+
+            if (imported === 0) {
+                showToast(skipped > 0 ? `所有日程（${skipped} 筆）均與現有日程重複，未匯入` : '沒有找到可匯入的日程', 'error');
+                return;
+            }
+
+            for (const key of Object.keys(newEvents)) {
+                if (!events[key]) events[key] = {};
+                Object.assign(events[key], newEvents[key]);
+            }
+            saveLocalData();
+            syncToCloud();
+            renderCalendar();
+            if (selectedDate) renderEventList();
+            showToast(skipped > 0 ? `成功匯入 ${imported} 筆，跳過 ${skipped} 筆重複日程` : `成功匯入 ${imported} 筆日程`, 'success');
         }
 
         // ===== Excel 匯入功能 =====
