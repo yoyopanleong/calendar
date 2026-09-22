@@ -796,6 +796,19 @@
             }
         }
 
+        function getTitleColor(title) {
+            const s = String(title || '').trim().toUpperCase();
+            if (s.startsWith('YW')) return 'linear-gradient(135deg, #f1c40f, #f39c12)';
+            if (s.startsWith('SRL')) return 'linear-gradient(135deg, #e74c3c, #c0392b)';
+            return 'linear-gradient(135deg, #3498db, #2980b9)';
+        }
+        function getTitleColorHex(title) {
+            const s = String(title || '').trim().toUpperCase();
+            if (s.startsWith('YW')) return '#f1c40f';
+            if (s.startsWith('SRL')) return '#e74c3c';
+            return '#3498db';
+        }
+
         function renderCalendar() {
             const year = currentDate.getFullYear(), month = currentDate.getMonth();
             const monthEl = document.getElementById('currentMonth');
@@ -832,7 +845,7 @@
             const showCount = ownerFilter ? (filteredCount > 0 ? filteredCount : '') : (filteredCount > 0 ? totalCount : '');
             el.innerHTML = `
                 <div class="day-number">${day}</div>
-                <div class="events-container">${dayEvents.map(e => `<div class="event owner-${e.owner}">${e.title}</div>`).join('')}</div>
+                <div class="events-container">${dayEvents.map(e => `<div class="event" style="background:${getTitleColor(e.title)}">${e.title}</div>`).join('')}</div>
                 ${showCount !== '' ? `<div class="event-count">${showCount}</div>` : ''}
             `;
             el.onclick = () => openDayModal(y, m, day);
@@ -876,7 +889,7 @@
             }
             dayEvents.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
             list.innerHTML = dayEvents.map(e => `
-                <div class="event-item">
+                <div class="event-item" style="border-left:5px solid ${getTitleColorHex(e.title)};">
                     <div class="event-info">
                         <h4>${e.title}
                         <span class="owner-badge ${e.owner}">${e.owner}</span></h4>
