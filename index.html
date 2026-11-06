@@ -1,53 +1,3 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雙重共享日程系統</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
-            --main-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --accent-color: #667eea;
-            background: var(--main-gradient);
-            min-height: 100vh;
-            padding: 20px;
-            transition: background 0.5s ease;
-        }
-        /* 日曆 B 主題色 (藍綠色) */
-        body.calendar-2-mode {
-            --main-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            --accent-color: #11998e;
-        }
-        .container { max-width: 900px; margin: 0 auto; }
-        .header {
-            background: var(--main-gradient);
-            border-radius: 15px 15px 0 0;
-            padding: 15px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            transition: background 0.5s ease;
-        }
-        .logo { display: flex; align-items: center; gap: 10px; color: white; font-size: 1.4em; font-weight: bold; }
-        .nav-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .nav-btn {
-            background: rgba(255,255,255,0.2); color: white; border: none;
-            padding: 10px 20px; border-radius: 25px; cursor: pointer;
-            font-size: 0.95em; transition: all 0.3s;
-        }
-        .nav-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
-        .switch-calendar-btn { background: rgba(255,255,255,0.9); color: #333; font-weight: bold; }
-        .switch-calendar-btn:hover { background: white; transform: scale(1.05); }
-        .today-btn { background: #27ae60; }
-        .owner-filter-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .owner-filter-btn {
             background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.3);
             padding: 6px 14px; border-radius: 20px; cursor: pointer;
             font-size: 0.85em; transition: all 0.25s; font-weight: 500;
@@ -98,3 +48,153 @@
             border-radius: 15px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.15);
             backdrop-filter: blur(10px); animation: slideUp 0.4s ease-out;
         }
+        .alerts-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
+            color: #333; font-size: 1.1em; font-weight: bold;
+            border-bottom: 2px solid #eee; padding-bottom: 10px;
+        }
+        .alert-list { display: flex; flex-direction: column; gap: 8px; }
+        .alert-item {
+            background: #f8f9fa; padding: 10px 12px; border-radius: 10px;
+            border-left: 4px solid var(--accent-color);
+        }
+        .alert-date-group {
+            font-size: 0.84em; color: #555; margin-bottom: 6px; font-weight: bold;
+        }
+        .alert-title {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            font-weight: bold; color: #333; margin-bottom: 4px;
+            min-width: 0;
+        }
+        .alert-title-text {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .alert-time { font-size: 0.8em; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
+        .alert-meta {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.82em; color: #666; flex-wrap: wrap;
+        }
+        .alert-date-group {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .no-upcoming { text-align: center; color: #999; padding: 15px; font-style: italic; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white; border-radius: 20px; padding: 25px; width: 90%;
+            max-width: 450px; max-height: 80vh; overflow-y: auto; animation: slideIn 0.3s;
+        }
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee; }
+        .modal-header h2 { color: #333; font-size: 1.3em; }
+        .close-btn { background: none; border: none; font-size: 1.8em; cursor: pointer; color: #999; }
+        .close-btn:hover { color: #e74c3c; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #333; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--accent-color); }
+        .form-group textarea { resize: vertical; min-height: 70px; }
+        /* checkbox / radio 唔應該套用文字輸入框嘅尺寸 */
+        .form-group input[type="checkbox"],
+        .form-group input[type="radio"] {
+            width: auto;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            flex: 0 0 auto;
+            accent-color: var(--accent-color);
+        }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px 20px; border: none; border-radius: 10px; font-size: 1em; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: var(--main-gradient); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: #e0e0e0; color: #333; }
+        .event-list { margin-top: 15px; }
+        .event-item {
+            background: #f8f9fa; border-radius: 10px; padding: 12px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .event-item:hover { background: #e8f4fd; }
+        .event-info { flex: 1; }
+        .event-info h4 { color: #333; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .event-info p { color: #666; font-size: 0.85em; }
+        .event-actions { display: flex; gap: 6px; }
+        .event-actions button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; }
+        .edit-btn { background: #3498db; color: white; }
+        .delete-btn { background: #e74c3c; color: white; }
+        .owner-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.7em; }
+        .owner-badge.yoyopan { background: #ffebee; color: #e74c3c; }
+        .owner-badge.gaspar { background: #e8f4fd; color: #667eea; }
+        .owner-badge.annie { background: #fff8e1; color: #f39c12; }
+        .owner-badge.candy { background: #e8f5e9; color: #27ae60; }
+        .no-events { text-align: center; color: #999; padding: 25px; }
+        .connection-status {
+            position: fixed; bottom: 15px; right: 15px; padding: 8px 15px;
+            border-radius: 20px; font-size: 0.8em; color: white;
+            display: flex; align-items: center; gap: 6px; z-index: 100;
+        }
+        .connection-status.online { background: #27ae60; }
+        .connection-status.offline { background: #95a5a6; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: white; }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .header { flex-direction: column; gap: 10px; padding: 15px; }
+            .owner-filter-group { justify-content: center; }
+            .day { height: 65px; padding: 5px; }
+            .day-number { font-size: 0.85em; }
+            .event { font-size: 0.6em; }
+            .weekday { padding: 10px 5px; font-size: 0.8em; }
+            .nav-buttons { flex-wrap: wrap; justify-content: center; }
+            .event-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .event-actions { width: 100%; }
+            .event-actions button { flex: 1; }
+            .alert-title { align-items: flex-start; flex-direction: column; gap: 4px; }
+        }
+        .toast {
+            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+            padding: 12px 25px; border-radius: 10px; color: white; z-index: 2000;
+            animation: toastIn 0.3s;
+        }
+        .toast.success { background: #27ae60; }
+        .toast.error { background: #e74c3c; }
+        .toast.info { background: #3498db; }
+        @keyframes toastIn { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        /* ===== 學校 Syllabus 模組 ===== */
+        .syllabus-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+        .syllabus-toolbar .btn { flex: 0 0 auto; padding: 8px 14px; font-size: 0.88em; }
+        .syllabus-body { display: flex; gap: 15px; align-items: flex-start; }
+        .syllabus-sidebar {
+            flex: 0 0 235px; max-height: 55vh; overflow-y: auto;
+            border: 1px solid #e5e5e5; border-radius: 10px; padding: 8px; background: #fafafa;
+        }
+        .tree-school { margin-bottom: 6px; }
+        .tree-school-head, .tree-class {
+            display: flex; justify-content: space-between; align-items: center; gap: 6px;
+            padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 0.86em;
+        }
+        .tree-school-head { font-weight: bold; color: #333; background: #fff; border: 1px solid #eee; }
+        .tree-school-head.active { background: #e8f4fd; border-color: #b9dcf5; }
+        .tree-school-head:hover { background: #eef5ff; }
+        .tree-class { margin-left: 10px; color: #555; }
+        .tree-class:hover { background: #f0f4ff; }
+        .tree-class.active { background: var(--accent-color); color: #fff; font-weight: bold; }
+        .tree-actions { display: flex; gap: 2px; opacity: .55; }
+        .tree-school-head:hover .tree-actions,
+        .tree-class:hover .tree-actions,
+        .tree-class.active .tree-actions { opacity: 1; }
+        .tree-actions button { background: none; border: none; cursor: pointer; font-size: 0.9em; padding: 0 2px; opacity: .8; }
+        .tree-actions button:hover { opacity: 1; }
