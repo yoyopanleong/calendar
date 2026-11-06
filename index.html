@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雙重共享日程系統</title>
+    <title>???曹澈?亦?蝟餌絞</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -18,7 +18,7 @@
             padding: 20px;
             transition: background 0.5s ease;
         }
-        /* 日曆 B 主題色 (藍綠色) */
+        /* ?交? B 銝駁???(???? */
         body.calendar-2-mode {
             --main-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
             --accent-color: #11998e;
@@ -92,7 +92,7 @@
             width: 18px; height: 18px; border-radius: 50%; font-size: 0.65em;
             display: flex; align-items: center; justify-content: center;
         }
-        /* 提醒區域樣式 */
+        /* ????見撘?*/
         .alerts-container {
             margin-top: 20px; background: rgba(255, 255, 255, 0.95);
             border-radius: 15px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.15);
@@ -155,6 +155,17 @@
         }
         .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--accent-color); }
         .form-group textarea { resize: vertical; min-height: 70px; }
+        /* checkbox / radio ??閰脣??冽?摮撓?交??偕撖?*/
+        .form-group input[type="checkbox"],
+        .form-group input[type="radio"] {
+            width: auto;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            flex: 0 0 auto;
+            accent-color: var(--accent-color);
+        }
         .btn-group { display: flex; gap: 10px; margin-top: 20px; }
         .btn { flex: 1; padding: 12px 20px; border: none; border-radius: 10px; font-size: 1em; cursor: pointer; transition: all 0.3s; }
         .btn-primary { background: var(--main-gradient); color: white; }
@@ -211,24 +222,175 @@
         .toast.error { background: #e74c3c; }
         .toast.info { background: #3498db; }
         @keyframes toastIn { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        /* ===== 摮豢 Syllabus 璅∠? ===== */
+        .syllabus-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+        .syllabus-toolbar .btn { flex: 0 0 auto; padding: 8px 14px; font-size: 0.88em; }
+        .syllabus-body { display: flex; gap: 15px; align-items: flex-start; }
+        .syllabus-sidebar {
+            flex: 0 0 235px; max-height: 55vh; overflow-y: auto;
+            border: 1px solid #e5e5e5; border-radius: 10px; padding: 8px; background: #fafafa;
+        }
+        .tree-school { margin-bottom: 6px; }
+        .tree-school-head, .tree-class {
+            display: flex; justify-content: space-between; align-items: center; gap: 6px;
+            padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 0.86em;
+        }
+        .tree-school-head { font-weight: bold; color: #333; background: #fff; border: 1px solid #eee; }
+        .tree-school-head.active { background: #e8f4fd; border-color: #b9dcf5; }
+        .tree-school-head:hover { background: #eef5ff; }
+        .tree-class { margin-left: 10px; color: #555; }
+        .tree-class:hover { background: #f0f4ff; }
+        .tree-class.active { background: var(--accent-color); color: #fff; font-weight: bold; }
+        .tree-actions { display: flex; gap: 2px; opacity: .55; }
+        .tree-school-head:hover .tree-actions,
+        .tree-class:hover .tree-actions,
+        .tree-class.active .tree-actions { opacity: 1; }
+        .tree-actions button { background: none; border: none; cursor: pointer; font-size: 0.9em; padding: 0 2px; opacity: .8; }
+        .tree-actions button:hover { opacity: 1; }
+        .tree-class.active .tree-actions button { color: #fff; }
+        .tree-hint, .tree-empty { font-size: 0.8em; color: #999; padding: 5px 10px; line-height: 1.6; }
+        .syllabus-main { flex: 1; min-width: 0; }
+        .syllabus-main-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+        .syllabus-main-head strong { color: #333; font-size: 0.95em; }
+        .syllabus-main-head input {
+            flex: 1; min-width: 160px; padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+        }
+        .syllabus-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .syllabus-form input {
+            flex: 1; min-width: 140px; padding: 9px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+        }
+        .syllabus-form .btn { flex: 0 0 auto; padding: 9px 14px; font-size: 0.88em; }
+        .syllabus-items { max-height: 45vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        .syl-item {
+            display: flex; gap: 10px; align-items: flex-start; background: #f8f9fa;
+            border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 9px 11px;
+        }
+        .syl-item-no { font-weight: bold; color: #999; font-size: 0.8em; min-width: 22px; }
+        .syl-item-body { flex: 1; min-width: 0; }
+        .syl-item-text { color: #333; font-size: 0.9em; overflow-wrap: anywhere; }
+        .syl-item-note { color: #888; font-size: 0.8em; margin-top: 2px; overflow-wrap: anywhere; }
+        .syl-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .syl-item-actions button {
+            border: none; background: #e0e0e0; border-radius: 6px; cursor: pointer;
+            font-size: 0.75em; padding: 3px 7px; color: #444;
+        }
+        .syl-item-actions button:hover { background: #d0d0d0; }
+        .syl-item-actions .del:hover { background: #e74c3c; color: #fff; }
+        .syl-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .syl-column { border: 1px solid #e9edf2; border-radius: 10px; padding: 8px; background: #fcfdff; min-width: 0; }
+        .syl-column-head {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.82em; font-weight: bold; color: #35618f; margin-bottom: 6px;
+            padding-bottom: 5px; border-bottom: 1px dashed #dbe6f3;
+        }
+        .syl-column-head .syl-count { font-weight: normal; color: #99a3ad; }
+        .syl-track-head { font-size: 0.78em; font-weight: bold; color: #35618f; margin: 6px 0 2px; }
+        @media (max-width: 900px) { .syl-columns { grid-template-columns: 1fr; } }
+        .syl-empty { color: #999; font-size: 0.85em; padding: 10px; }
+        .syllabus-hint { font-size: 0.78em; color: #888; margin: -6px 0 10px; line-height: 1.5; }
+        .syl-year-filter {
+            display: flex; align-items: center; gap: 6px; font-size: 0.85em; font-weight: bold;
+            color: #34495e; background: #eef3fa; border: 1px solid #d7e3f1; border-radius: 10px; padding: 4px 10px;
+        }
+        .syl-year-filter select { padding: 5px 8px; border: 1px solid #cfd8e3; border-radius: 6px; font-size: 1em; background: #fff; }
+        .tree-year { font-size: 0.8em; color: #999; margin-left: 4px; font-weight: normal; }
+        .tree-year.muted { color: #c0392b; }
+        .tree-class.active .tree-year { color: rgba(255,255,255,0.8); }
+        .syl-class-year-bar {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+            margin: -2px 0 10px; font-size: 0.85em; color: #34495e;
+        }
+        .syl-year-label { font-weight: bold; }
+        .syl-year-chip {
+            border: 1px solid #cfd8e3; background: #fff; color: #34495e;
+            border-radius: 999px; padding: 4px 11px; font-size: 0.95em; cursor: pointer;
+        }
+        .syl-year-chip:hover { border-color: #3498db; color: #2980b9; }
+        .syl-year-chip.active { background: #3498db; border-color: #3498db; color: #fff; font-weight: bold; }
+        .syl-year-chip.add { border-style: dashed; color: #2980b9; }
+        .syl-year-chip.del { color: #c0392b; border-color: #eec4bf; }
+        .syl-year-chip.del:hover { background: #fdecea; border-color: #e74c3c; color: #c0392b; }
+        .syl-year-none { color: #c0392b; }
+        .syl-year-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
+        .syl-year-option {
+            border: 1px solid #cfd8e3; background: #f7fbff; color: #2c3e50;
+            border-radius: 10px; padding: 9px 16px; cursor: pointer; font-size: 0.95em;
+        }
+        .syl-year-option:hover:not(:disabled) { border-color: #3498db; background: #eaf4ff; }
+        .syl-year-option:disabled { opacity: 0.5; cursor: default; background: #f0f0f0; }
+        .syl-year-create { display: flex; gap: 8px; flex-wrap: wrap; }
+        .syl-year-create input {
+            flex: 1; min-width: 150px; padding: 9px 10px;
+            border: 1px solid #cfd8e3; border-radius: 8px; font-size: 1em;
+        }
+        .syl-danger-btn { background: #e74c3c; color: #fff; }
+        .syl-danger-btn:hover { background: #c0392b; }
+
+        /* 鞎潔??臬 */
+        .paste-area {
+            width: 100%; min-height: 130px; padding: 10px 12px; border: 2px dashed #b9dcf5;
+            border-radius: 10px; font-family: Consolas, monospace; font-size: 0.85em; resize: vertical;
+        }
+        .paste-options { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 10px 0; font-size: 0.85em; color: #555; }
+        .paste-options select { padding: 5px 8px; border: 1px solid #ddd; border-radius: 6px; }
+        .paste-options label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+        .paste-preview-wrap { max-height: 220px; overflow: auto; border: 1px solid #eee; border-radius: 8px; }
+        .paste-preview { width: 100%; border-collapse: collapse; font-size: 0.82em; }
+        .paste-preview th { background: #f0f0f0; padding: 6px 8px; text-align: left; position: sticky; top: 0; }
+        .paste-preview td { padding: 6px 8px; border-top: 1px solid #eee; overflow-wrap: anywhere; vertical-align: top; }
+        .paste-preview td.idx { color: #aaa; width: 40px; }
+        .paste-summary { font-size: 0.82em; color: #666; margin-top: 8px; }
+
+        /* ?亦? ??Syllabus ??? */
+        .syllabus-link-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+        .syllabus-link-row select {
+            flex: 1; min-width: 130px; padding: 8px 10px; border: 2px solid #e0e0e0; border-radius: 8px;
+        }
+        .event-syllabus-options { max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 6px; }
+        /* ??.form-group label.syl-check ???芸?摨佗??踹?鋡?.form-group label ??block/bold ?? */
+        .form-group label.syl-check {
+            display: flex; align-items: flex-start; gap: 8px;
+            margin: 0 0 2px; padding: 6px 8px; border-radius: 6px;
+            font-size: 0.85em; font-weight: normal; color: inherit; cursor: pointer;
+        }
+        .syl-check:hover { background: #f5f8ff; }
+        .syl-check.checked { background: #eaf4ff; }
+        .syl-check input[type="checkbox"] { width: 16px; height: 16px; margin: 1px 0 0; flex: 0 0 auto; cursor: pointer; }
+        .syl-check > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; line-height: 1.45; }
+        .syl-check > em { flex: 0 0 auto; color: #999; font-style: normal; font-size: 0.9em; line-height: 1.45; }
+        .event-syllabus-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        .syl-chip {
+            background: #eaf4ff; color: #2c6ca8; border-radius: 12px; padding: 3px 9px;
+            font-size: 0.75em; display: inline-flex; gap: 5px; align-items: center;
+        }
+        .syl-chip button { border: none; background: none; cursor: pointer; color: #2c6ca8; font-size: 1em; padding: 0; }
+        .event-syllabus-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .syl-tag { background: #eaf4ff; color: #2c6ca8; border-radius: 10px; padding: 2px 8px; font-size: 0.72em; }
+
+        @media (max-width: 768px) {
+            .syllabus-body { flex-direction: column; }
+            .syllabus-sidebar { flex: 1 1 auto; width: 100%; max-height: 28vh; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="logo">
-                <span id="logoIcon">📐</span>
-                <span id="logoText">數學測考</span>
+                <span id="logoIcon">??</span>
+                <span id="logoText">?詨飛皜祈?/span>
             </div>
             <div class="nav-buttons">
-                <button class="nav-btn switch-calendar-btn" onclick="toggleCalendarMode()">🔄 切換其他測考及假期</button>
-                <button class="nav-btn" onclick="previousMonth()">◀ 上月</button>
+                <button class="nav-btn switch-calendar-btn" onclick="toggleCalendarMode()">?? ???嗡?皜祈???</button>
+                <button class="nav-btn" onclick="previousMonth()">? 銝?</button>
                 <span class="current-month" id="currentMonth"></span>
-                <button class="nav-btn" onclick="nextMonth()">下月 ▶</button>
-                <button class="nav-btn today-btn" onclick="goToToday()">今天</button>
-                <button class="nav-btn" style="background:#e67e22;" onclick="openStudentList()">📋 學生報名</button>
-                <button class="nav-btn" style="background:#27ae60;" onclick="openExportRangeModal()">📥 匯出日程</button>
-                <button class="nav-btn" style="background:#2980b9;" onclick="triggerCalendarImport()">📤 匯入日程</button>
+                <button class="nav-btn" onclick="nextMonth()">銝? ??/button>
+                <button class="nav-btn today-btn" onclick="goToToday()">隞予</button>
+                <button class="nav-btn" style="background:#e67e22;" onclick="openStudentList()">?? 摮貊??勗?</button>
+                <button class="nav-btn" style="background:#27ae60;" onclick="openExportRangeModal()">? ?臬?亦?</button>
+                <button class="nav-btn" style="background:#2980b9;" onclick="triggerCalendarImport()">? ?臬?亦?</button>
+                <button class="nav-btn" style="background:#16a085;" onclick="openSyllabusModal()">?? Syllabus</button>
             </div>
             <div class="owner-filter-group">
                 <button class="owner-filter-btn" id="filter-gaspar" onclick="toggleOwnerFilter('gaspar')">Gaspar</button>
@@ -242,24 +404,24 @@
 
         <div class="calendar">
             <div class="weekdays">
-                <div class="weekday">週日</div><div class="weekday">週一</div><div class="weekday">週二</div>
-                <div class="weekday">週三</div><div class="weekday">週四</div><div class="weekday">週五</div><div class="weekday">週六</div>
+                <div class="weekday">?望</div><div class="weekday">?曹?</div><div class="weekday">?曹?</div>
+                <div class="weekday">?曹?</div><div class="weekday">?勗?</div><div class="weekday">?曹?</div><div class="weekday">?勗</div>
             </div>
             <div class="days" id="calendarDays"></div>
         </div>
 
-        <!-- 提醒區域 (僅在日曆 A 顯示) -->
+        <!-- ?????(??交? A 憿舐內) -->
         <div id="upcomingAlerts" class="alerts-container" style="display: none;">
             <div class="alerts-header">
-                <span class="alerts-icon">🔔</span>
-                <span>未來兩週預覽 (來自其他測考及假期)</span>
+                <span class="alerts-icon">??</span>
+                <span>?芯??拚梢?閬?(靘?嗡?皜祈???)</span>
             </div>
-            <div class="alert-list" id="alertList"><div class="no-upcoming">載入中...</div></div>
+            <div class="alert-list" id="alertList"><div class="no-upcoming">頛銝?..</div></div>
         </div>
     </div>
 
     <div class="connection-status offline" id="connectionStatus">
-        <span class="status-dot"></span><span id="statusText">連接中...</span>
+        <span class="status-dot"></span><span id="statusText">??銝?..</span>
     </div>
 
     <div class="modal" id="dayModal">
@@ -268,7 +430,7 @@
                 <h2 id="modalDate"></h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
-            <button class="btn btn-primary" style="width:100%; margin-bottom:15px;" onclick="showAddForm()">➕ 添加日程</button>
+            <button class="btn btn-primary" style="width:100%; margin-bottom:15px;" onclick="showAddForm()">??瘛餃??亦?</button>
             <div class="event-list" id="eventList"></div>
         </div>
     </div>
@@ -276,16 +438,16 @@
     <div class="modal" id="eventModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="eventModalTitle">添加日程</h2>
+                <h2 id="eventModalTitle">瘛餃??亦?</h2>
                 <button class="close-btn" onclick="closeEventModal()">&times;</button>
             </div>
             <form id="eventForm" onsubmit="saveEvent(event)">
                 <div class="form-group">
-                    <label>📝 標題</label>
-                    <input type="text" id="eventTitle" placeholder="例如：微積分測驗" required>
+                    <label>?? 璅?</label>
+                    <input type="text" id="eventTitle" placeholder="靘?嚗凝蝛?皜祇?" required>
                 </div>
                 <div class="form-group">
-                    <label>👤 負責人</label>
+                    <label>? 鞎痊鈭?/label>
                     <select id="eventOwner">
                         <option value="yoyopan">yoyopan</option>
                         <option value="gaspar">gaspar</option>
@@ -294,56 +456,66 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>📋 備註</label>
-                    <textarea id="eventDescription" placeholder="考試範圍、地點等說明"></textarea>
+                    <label>?? ?酉</label>
+                    <textarea id="eventDescription" placeholder="?岫蝭??暺?隤芣?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>?? 撠? Syllabus嚗?賂?</label>
+                    <div class="syllabus-link-row">
+                        <select id="eventSyllabusSchool" onchange="onEventSyllabusSchoolChange()"></select>
+                        <select id="eventSyllabusClass" onchange="onEventSyllabusClassChange()"></select>
+                        <select id="eventSyllabusYear" onchange="renderEventSyllabusOptions()"></select>
+                    </div>
+                    <div id="eventSyllabusOptions" class="event-syllabus-options"></div>
+                    <div id="eventSyllabusChips" class="event-syllabus-chips"></div>
                 </div>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-secondary" onclick="closeEventModal()">取消</button>
-                    <button type="submit" class="btn btn-primary">💾 保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEventModal()">??</button>
+                    <button type="submit" class="btn btn-primary">? 靽?</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 匯出日程月份段 Modal -->
+    <!-- ?臬?亦??遢畾?Modal -->
     <div class="modal" id="exportRangeModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>📥 匯出日程</h2>
+                <h2>? ?臬?亦?</h2>
                 <button class="close-btn" onclick="closeExportRangeModal()">&times;</button>
             </div>
-            <p style="margin-bottom:15px; color:#666; font-size:0.9em;">選擇要匯出的起始與結束月份（支援跨年份）</p>
+            <p style="margin-bottom:15px; color:#666; font-size:0.9em;">?豢?閬?箇?韏瑕?????隞踝??舀頝典僑隞踝?</p>
             <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px;">
                 <div class="form-group" style="flex:1; min-width:130px;">
-                    <label>起始月份</label>
+                    <label>韏瑕??遢</label>
                     <select id="exportStartYear" style="width:100%; margin-bottom:6px;"></select>
                     <select id="exportStartMonth" style="width:100%;"></select>
                 </div>
                 <div class="form-group" style="flex:1; min-width:130px;">
-                    <label>結束月份</label>
+                    <label>蝯??遢</label>
                     <select id="exportEndYear" style="width:100%; margin-bottom:6px;"></select>
                     <select id="exportEndMonth" style="width:100%;"></select>
                 </div>
             </div>
             <div class="btn-group">
-                <button type="button" class="btn btn-secondary" onclick="closeExportRangeModal()">取消</button>
-                <button type="button" class="btn btn-primary" onclick="doExportCalendar()">📥 匯出</button>
+                <button type="button" class="btn btn-secondary" onclick="closeExportRangeModal()">??</button>
+                <button type="button" class="btn btn-primary" onclick="doExportCalendar()">? ?臬</button>
             </div>
         </div>
     </div>
 
-    <!-- 學生報名列表 Modal -->
+    <!-- 摮貊??勗??” Modal -->
     <div class="modal" id="studentListModal">
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
-                <h2>📋 學生報名表</h2>
+                <h2>?? 摮貊??勗?銵?/h2>
                 <button class="close-btn" onclick="closeStudentListModal()">&times;</button>
             </div>
             <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-                <button class="btn btn-primary" onclick="showStudentForm()">➕ 新增報名</button>
-                <button class="btn" style="background:#27ae60; color:white;" onclick="exportToExcel()">📥 匯出 Excel</button>
-                <button class="btn" style="background:#8e44ad; color:white;" onclick="document.getElementById('importFileInput').click()">📤 匯入 Excel</button>
-                <button class="btn" style="background:#c0392b; color:white;" onclick="clearAllStudents()">🗑️ 一鍵清空</button>
+                <button class="btn btn-primary" onclick="showStudentForm()">???啣??勗?</button>
+                <button class="btn" style="background:#27ae60; color:white;" onclick="exportToExcel()">? ?臬 Excel</button>
+                <button class="btn" style="background:#8e44ad; color:white;" onclick="document.getElementById('importFileInput').click()">? ?臬 Excel</button>
+                <button class="btn" style="background:#c0392b; color:white;" onclick="clearAllStudents()">??儭?銝?菜?蝛?/button>
                 <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleImportFile(this)">
                 <span id="studentCount" style="display:flex; align-items:center; color:#666; font-size:0.9em;"></span>
             </div>
@@ -351,94 +523,93 @@
                 <table id="studentTable" style="width:100%; border-collapse:collapse; font-size:0.85em;">
                     <thead>
                         <tr style="background:#f0f0f0;">
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">中文姓名</th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">銝剜?憪?</th>
                             <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">English Name</th>
                             <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Class</th>
                             <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Mobile</th>
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">可補習日子</th>
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">留班</th>
-                            <th style="padding:8px; text-align:center; border-bottom:2px solid #ddd;">操作</th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">?航?蝧摮?/th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">?</th>
+                            <th style="padding:8px; text-align:center; border-bottom:2px solid #ddd;">??</th>
                         </tr>
                     </thead>
                     <tbody id="studentTableBody"></tbody>
                 </table>
             </div>
-            <div id="noStudentData" class="no-events">📭 暫無學生報名資料</div>
+            <div id="noStudentData" class="no-events">? ?怎摮貊??勗?鞈?</div>
         </div>
     </div>
 
-    <!-- 學生報名表單 Modal -->
+    <!-- 摮貊??勗?銵典 Modal -->
     <div class="modal" id="studentFormModal">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 id="studentFormTitle">新增報名</h2>
+                <h2 id="studentFormTitle">?啣??勗?</h2>
                 <button class="close-btn" onclick="closeStudentFormModal()">&times;</button>
             </div>
             <form id="studentForm" onsubmit="saveStudent(event)">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="form-group">
-                        <label>中文姓名 *</label>
-                        <input type="text" id="studentChineseName" placeholder="中文姓名" required>
+                        <label>銝剜?憪? *</label>
+                        <input type="text" id="studentChineseName" placeholder="銝剜?憪?" required>
                     </div>
                     <div class="form-group">
-                        <label>中文姓名譯音</label>
-                        <input type="text" id="studentTransliteration" placeholder="粵語拼音/國語拼音">
+                        <label>銝剜?憪?霅舫</label>
+                        <input type="text" id="studentTransliteration" placeholder="蝎菔??潮/???潮">
                     </div>
                     <div class="form-group">
                         <label>English Name</label>
                         <input type="text" id="studentEnglishName" placeholder="English Name">
                     </div>
                     <div class="form-group">
-                        <label>Class（年級）</label>
-                        <input type="text" id="studentClass" placeholder="例如：F1A">
+                        <label>Class嚗僑蝝?</label>
+                        <input type="text" id="studentClass" placeholder="靘?嚗1A">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Mobile No *</label>
-                    <input type="tel" id="studentMobile" placeholder="請輸入電話號碼" required>
+                    <input type="tel" id="studentMobile" placeholder="隢撓?仿閰梯?蝣? required>
                 </div>
                 <div class="form-group">
-                    <label>主要聯絡人</label>
+                    <label>銝餉??舐窗鈭?/label>
                     <div style="display:flex; gap:16px; flex-wrap:wrap;">
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="radio" name="primaryContact" value="father" checked> 父親
+                            <input type="radio" name="primaryContact" value="father" checked> ?嗉扛
                         </label>
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="radio" name="primaryContact" value="mother"> 母親
+                            <input type="radio" name="primaryContact" value="mother"> 瘥扛
                         </label>
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="radio" name="primaryContact" value="other"> 其他聯絡人
-                        </label>
+                            <input type="radio" name="primaryContact" value="other"> ?嗡??舐窗鈭?                        </label>
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="form-group">
-                        <label>姓名（父親）</label>
-                        <input type="text" id="studentFatherName" placeholder="父親姓名">
+                        <label>憪?嚗閬迎?</label>
+                        <input type="text" id="studentFatherName" placeholder="?嗉扛憪?">
                     </div>
                     <div class="form-group">
-                        <label>電話（父親）</label>
-                        <input type="tel" id="studentFatherPhone" placeholder="父親電話">
-                    </div>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div class="form-group">
-                        <label>姓名（母親）</label>
-                        <input type="text" id="studentMotherName" placeholder="母親姓名">
-                    </div>
-                    <div class="form-group">
-                        <label>電話（母親）</label>
-                        <input type="tel" id="studentMotherPhone" placeholder="母親電話">
+                        <label>?餉店嚗閬迎?</label>
+                        <input type="tel" id="studentFatherPhone" placeholder="?嗉扛?餉店">
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="form-group">
-                        <label>其他聯絡人</label>
-                        <input type="text" id="studentOtherContact" placeholder="其他聯絡人姓名">
+                        <label>憪?嚗?閬迎?</label>
+                        <input type="text" id="studentMotherName" placeholder="瘥扛憪?">
                     </div>
                     <div class="form-group">
-                        <label>電話（其他聯絡人）</label>
-                        <input type="tel" id="studentOtherContactPhone" placeholder="其他聯絡人電話">
+                        <label>?餉店嚗?閬迎?</label>
+                        <input type="tel" id="studentMotherPhone" placeholder="瘥扛?餉店">
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label>?嗡??舐窗鈭?/label>
+                        <input type="text" id="studentOtherContact" placeholder="?嗡??舐窗鈭箏???>
+                    </div>
+                    <div class="form-group">
+                        <label>?餉店嚗隞蝯∩犖嚗?/label>
+                        <input type="tel" id="studentOtherContactPhone" placeholder="?嗡??舐窗鈭粹閰?>
                     </div>
                 </div>
                 <div class="form-group">
@@ -446,7 +617,7 @@
                     <input type="date" id="studentBirth">
                 </div>
                 <div class="form-group">
-                    <label>可補習日子</label>
+                    <label>?航?蝧摮?/label>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;" id="daysCheckboxGroup">
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
                             <input type="checkbox" value="Mon"> Mon
@@ -469,43 +640,139 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>校外活動</label>
+                    <label>?∪?瘣餃?</label>
                     <div id="extracurricularContainer">
                     </div>
-                    <button type="button" onclick="addExtraRow()" style="background:#3498db; color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; font-size:0.9em; margin-top:4px;">➕ 新增活動</button>
+                    <button type="button" onclick="addExtraRow()" style="background:#3498db; color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; font-size:0.9em; margin-top:4px;">???啣?瘣餃?</button>
                 </div>
                 <div class="form-group">
-                    <label>留班記錄</label>
+                    <label>?閮?</label>
                     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="radio" name="retained" value="no" checked onchange="toggleRetainedGrade(false)"> 無留班
-                        </label>
+                            <input type="radio" name="retained" value="no" checked onchange="toggleRetainedGrade(false)"> ?∠???                        </label>
                         <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                            <input type="radio" name="retained" value="yes" onchange="toggleRetainedGrade(true)"> 有留班
-                        </label>
-                        <span style="color:#999; font-size:0.85em;">留班年級：</span>
+                            <input type="radio" name="retained" value="yes" onchange="toggleRetainedGrade(true)"> ????                        </label>
+                        <span style="color:#999; font-size:0.85em;">?撟渡?嚗?/span>
                         <select id="studentRetainedGrade" disabled style="padding:8px; border:2px solid #e0e0e0; border-radius:8px; font-size:0.9em;">
-                            <option value="">請選擇</option>
-                            <option value="小一">小一</option>
-                            <option value="小二">小二</option>
-                            <option value="小三">小三</option>
-                            <option value="小四">小四</option>
-                            <option value="小五">小五</option>
-                            <option value="小六">小六</option>
-                            <option value="中一">中一</option>
-                            <option value="中二">中二</option>
-                            <option value="中三">中三</option>
-                            <option value="中四">中四</option>
-                            <option value="中五">中五</option>
-                            <option value="中六">中六</option>
+                            <option value="">隢??/option>
+                            <option value="撠?">撠?</option>
+                            <option value="撠?">撠?</option>
+                            <option value="撠?">撠?</option>
+                            <option value="撠?">撠?</option>
+                            <option value="撠?">撠?</option>
+                            <option value="撠">撠</option>
+                            <option value="銝凋?">銝凋?</option>
+                            <option value="銝凋?">銝凋?</option>
+                            <option value="銝凋?">銝凋?</option>
+                            <option value="銝剖?">銝剖?</option>
+                            <option value="銝凋?">銝凋?</option>
+                            <option value="銝剖">銝剖</option>
                         </select>
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-secondary" onclick="closeStudentFormModal()">取消</button>
-                    <button type="submit" class="btn btn-primary">💾 保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeStudentFormModal()">??</button>
+                    <button type="submit" class="btn btn-primary">? 靽?</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 摮豢 Syllabus Modal -->
+    <div class="modal" id="syllabusModal">
+        <div class="modal-content" style="max-width: 1050px; width: 95%;">
+            <div class="modal-header">
+                <h2>?? 摮豢 Syllabus 蝞∠?</h2>
+                <button class="close-btn" onclick="closeSyllabusModal()">&times;</button>
+            </div>
+            <div class="syllabus-toolbar">
+                <label class="syl-year-filter">?? 摮詨僑
+                    <select id="syllabusYearFilter" onchange="onSyllabusYearFilterChange()"></select>
+                </label>
+                <button class="btn" style="background:#8e44ad; color:white;" onclick="openYearPickerForSelection()">嚗??啣?摮詨僑</button>
+                <button class="btn" style="background:#3498db; color:white;" onclick="addSchoolPrompt()">???啣?摮豢</button>
+                <button class="btn" style="background:#9b59b6; color:white;" onclick="addClassPrompt()">???啣??剔?</button>
+                <button class="btn" style="background:#e67e22; color:white;" onclick="openSyllabusPaste()">? 鞎潔??臬</button>
+                <button class="btn" style="background:#27ae60; color:white;" onclick="exportSyllabusExcel()">? ?臬 Excel</button>
+                <button class="btn" style="background:#16a085; color:white;" onclick="document.getElementById('syllabusFileInput').click()">?? ?臬 Excel</button>
+                <input type="file" id="syllabusFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleSyllabusFile(this)">
+            </div>
+            <div class="syllabus-body">
+                <div class="syllabus-sidebar" id="syllabusTree"></div>
+                <div class="syllabus-main">
+                    <div class="syllabus-main-head">
+                        <strong id="syllabusTitle">隢??豢?摮豢?蝝?/strong>
+                        <input type="text" id="syllabusSearch" placeholder="?? ???批捆嚗?閮? oninput="renderSyllabusItems()">
+                        <button type="button" class="btn syl-danger-btn" id="syllabusDeleteClassBtn" style="display:none; flex:0 0 auto; padding:8px 14px; font-size:0.85em;" onclick="deleteSelectedClass()">?? ?芷?剔?</button>
+                    </div>
+                    <div class="syl-class-year-bar" id="sylClassYearBar" style="display:none;"></div>
+                    <div class="syllabus-form" id="syllabusForm" style="display:none;">
+                        <select id="syllabusItemTrack" style="display:none; flex:0 0 110px; padding:9px 8px; border:2px solid #e0e0e0; border-radius:8px;">
+                            <option value="1">蝚砌???/option>
+                            <option value="2">蝚砌???/option>
+                        </select>
+                        <input type="text" id="syllabusItemText" placeholder="??批捆嚗?憒?蝚?蝡?鈭活?賣">
+                        <input type="text" id="syllabusItemNote" placeholder="?酉嚗?征嚗?>
+                        <button type="button" class="btn btn-primary" id="syllabusSaveBtn" onclick="saveSyllabusItem()">???啣?</button>
+                        <button type="button" class="btn btn-secondary" id="syllabusCancelBtn" style="display:none;" onclick="cancelSyllabusEdit()">??</button>
+                    </div>
+                    <div id="syllabusItems" class="syllabus-items"></div>
+                    <div id="syllabusEmpty" class="no-events" style="display:none;">隢撌阡??豢?摮豢?蝝?/div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 摮詨僑?豢?嚗憓?Modal -->
+    <div class="modal" id="sylYearModal">
+        <div class="modal-content" style="max-width: 560px;">
+            <div class="modal-header">
+                <h2>?? ?豢??憓飛撟?/h2>
+                <button class="close-btn" onclick="closeYearPicker()">&times;</button>
+            </div>
+            <p id="sylYearHint" class="syllabus-hint" style="margin-top:0;"></p>
+            <div class="syl-year-list" id="sylYearList"></div>
+            <div class="syl-year-create">
+                <input type="text" id="sylYearNewInput" placeholder="靘?嚗?027-2028" onkeydown="if(event.key==='Enter'){event.preventDefault();createYearFromModal();}">
+                <button type="button" class="btn" style="background:#27ae60; color:#fff; flex:0 0 auto;" onclick="createYearFromModal()">??撱箇??啣飛撟?/button>
+            </div>
+            <p class="syllabus-hint" style="margin-top:10px;">摮詨僑?澆?????靘? `2027`?2027/2028`?2027-28` ?賣?霈? `2027-2028`??/p>
+        </div>
+    </div>
+
+    <!-- Syllabus 鞎潔??臬 Modal -->
+    <div class="modal" id="syllabusPasteModal">
+        <div class="modal-content" style="max-width: 900px; width: 95%;">
+            <div class="modal-header">
+                <h2>? 鞎潔??臬 Syllabus</h2>
+                <button class="close-btn" onclick="closeSyllabusPaste()">&times;</button>
+            </div>
+            <p id="pasteTargetLabel" style="margin-bottom:10px; color:#555; font-size:0.9em;"></p>
+            <div id="pasteTrackRow" style="display:none; margin-bottom:10px; font-size:0.9em; color:#444;">
+                ?? ?臬?堆?
+                <select id="pasteTrack" style="padding:6px 10px; border:1px solid #cfd8e3; border-radius:6px;">
+                    <option value="1">蝚砌???/option>
+                    <option value="2">蝚砌???/option>
+                </select>
+                <span style="color:#999; font-size:0.85em;">嚗迨摮豢?粹??芋撘?</span>
+            </div>
+            <textarea id="syllabusPasteArea" class="paste-area"
+                placeholder="??Word / Excel ?湔 Ctrl+V 鞎潔???#10;&#10;??Excel嚗銝甈∟票憭?憭?嚗頂蝯望??芸???&#10;??Word嚗?銵????殷?銵冽鈭血嚗?
+                oninput="parsePasteArea()"></textarea>
+            <div class="paste-options">
+                <span>?批捆甈?<select id="pasteContentCol" onchange="renderPastePreview()"></select></span>
+                <span>?酉甈?<select id="pasteNoteCol" onchange="renderPastePreview()"></select></span>
+                <label><input type="radio" name="pasteMode" value="append" checked> 餈賢?</label>
+                <label><input type="radio" name="pasteMode" value="replace"> ?誨甇斤蝝????/label>
+            </div>
+            <div class="paste-preview-wrap">
+                <table class="paste-preview" id="pastePreview"></table>
+            </div>
+            <div class="paste-summary" id="pasteSummary"></div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="closeSyllabusPaste()">??</button>
+                <button type="button" class="btn btn-primary" onclick="confirmSyllabusPaste()">???臬</button>
+            </div>
         </div>
     </div>
 
@@ -529,32 +796,46 @@
         let editingEventId = null;
         let isConnected = false;
         
-        // 狀態管理
-        let currentCalendarId = 'calendarA'; 
+        // ??恣??        let currentCalendarId = 'calendarA'; 
         let eventsRef = null;
         let localStorageKey = 'sharedCalendarEvents_A';
         let calendarB_Events = {}; 
         let ownerFilter = null; 
         
-        // 學生報名
+        // 摮貊??勗?
         let students = {};
         let studentsRef = null;
         let editingStudentId = null;
 
+        // 摮豢 Syllabus
+        let syllabus = {};
+        let syllabusRef = null;
+        let syllabusYearsRef = null;
+        let syllabusYears = {};          // ?函頂蝯勗歇撱箇??飛撟?        let syllabusSel = { schoolId: null, classId: null };
+        let syllabusEditingItemId = null;
+        let eventSyllabusRefs = [];
+        let pasteRows = [];
+        let pasteTarget = { schoolId: null, classId: null, year: null };
+        let sylYearModalContext = { schoolId: null, classId: null };
+        const SYLLABUS_CACHE_KEY = 'sharedSyllabus_v1';
+        const DEFAULT_SCHOOL_YEAR = '2026-2027';
+        let syllabusYearFilter = DEFAULT_SCHOOL_YEAR;
+        let syllabusYearBackfillDone = false;
+
         const calendarConfigs = {
             calendarA: { 
-                name: '數學測考', 
-                icon: '📐', 
+                name: '?詨飛皜祈?, 
+                icon: '??', 
                 dbPath: 'events', 
                 storageKey: 'sharedCalendarEvents_A', 
-                switchBtnText: '🔄 切換其他測考及假期' 
+                switchBtnText: '?? ???嗡?皜祈???' 
             },
             calendarB: { 
-                name: '其他測考及假期', 
-                icon: '🗓️', 
+                name: '?嗡?皜祈???', 
+                icon: '??儭?, 
                 dbPath: 'events_other', 
                 storageKey: 'sharedCalendarEvents_B', 
-                switchBtnText: '🔄 切換數學測考' 
+                switchBtnText: '?? ???詨飛皜祈? 
             }
         };
 
@@ -565,12 +846,13 @@
             setupFirebaseListener();
             fetchCalendarBData();
             initStudents();
+            initSyllabus();
         });
 
         function toggleCalendarMode() {
             const newMode = currentCalendarId === 'calendarA' ? 'calendarB' : 'calendarA';
             initCalendarMode(newMode);
-            showToast(`已切換至：${calendarConfigs[newMode].name}`, 'info');
+            showToast(`撌脣??嚗?{calendarConfigs[newMode].name}`, 'info');
         }
 
         function toggleOwnerFilter(owner) {
@@ -621,7 +903,7 @@
                 const saved = localStorage.getItem(localStorageKey);
                 events = saved ? JSON.parse(saved) : {};
             } catch (e) { 
-                console.error("讀取本地數據失敗", e);
+                console.error("霈??唳?仃??, e);
                 events = {}; 
             }
         }
@@ -648,7 +930,7 @@
                 }
                 updateStatus(true);
             }, (error) => {
-                console.error("[Firebase] 讀取錯誤:", error);
+                console.error("[Firebase] 霈?隤?", error);
                 updateStatus(false);
             });
         }
@@ -662,8 +944,7 @@
         }
 
         /**
-         * 【優化核心】按標題分組，並依「最早開始日期」排序
-         */
+         * ??敹?璅???嚗蒂靘??拚?憪??摨?         */
         function renderUpcomingAlerts() {
             const listEl = document.getElementById('alertList');
             if (!listEl) return;
@@ -684,7 +965,7 @@
                 if (eventDate < today || eventDate > endDate) continue;
 
                 Object.values(calendarB_Events[dateKey]).forEach(ev => {
-                    const title = ev.title || '未命名日程';
+                    const title = ev.title || '?芸?蝔?;
 
                     if (!groupedMap.has(title)) {
                         groupedMap.set(title, {
@@ -712,11 +993,11 @@
             const groupedEvents = Array.from(groupedMap.values()).sort((a, b) => a.firstTimestamp - b.firstTimestamp);
 
             if (groupedEvents.length === 0) {
-                listEl.innerHTML = '<div class="no-upcoming">✅ 未來兩週沒有來自「其他測考及假期」的日程</div>';
+                listEl.innerHTML = '<div class="no-upcoming">???芯??拚望????芥隞葫???????亦?</div>';
                 return;
             }
 
-            const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            const weekDays = ['?望', '?曹?', '?曹?', '?曹?', '?勗?', '?曹?', '?勗'];
 
             const singleDayByDate = new Map();
             const multiDayGroups = [];
@@ -748,7 +1029,7 @@
                             <div class="alert-title">
                                 <span class="alert-title-text">${dateLabel}</span>
                             </div>
-                            <div class="alert-date-group">${item.titles.join('、')}</div>
+                            <div class="alert-date-group">${item.titles.join('??)}</div>
                         </div>`
                     });
                 });
@@ -758,7 +1039,7 @@
                 .forEach(group => {
                     const dateText = group.dates
                         .map(d => `${d.getMonth() + 1}/${d.getDate()}(${weekDays[d.getDay()]})`)
-                        .join('、');
+                        .join('??);
                     rows.push({
                         ts: group.firstTimestamp,
                         html: `
@@ -778,8 +1059,8 @@
         function syncToCloud() {
             if (eventsRef && isConnected) {
                 eventsRef.set(events).catch((err) => {
-                    console.error("同步失敗", err);
-                    showToast('同步失敗，已存於本地', 'error');
+                    console.error("?郊憭望?", err);
+                    showToast('?郊憭望?嚗歇摮?砍', 'error');
                 });
             }
         }
@@ -792,7 +1073,7 @@
                 const shortName = calendarConfigs[currentCalendarId].name.length > 4 
                     ? calendarConfigs[currentCalendarId].name.substring(0, 4) + '..' 
                     : calendarConfigs[currentCalendarId].name;
-                text.textContent = online ? `${shortName} 已同步` : '離線模式';
+                text.textContent = online ? `${shortName} 撌脣?甇匝 : '?Ｙ?璅∪?';
             }
         }
 
@@ -812,7 +1093,7 @@
         function renderCalendar() {
             const year = currentDate.getFullYear(), month = currentDate.getMonth();
             const monthEl = document.getElementById('currentMonth');
-            if (monthEl) monthEl.textContent = `${year}年 ${month + 1}月`;
+            if (monthEl) monthEl.textContent = `${year}撟?${month + 1}?;
             const firstDay = new Date(year, month, 1).getDay();
             const totalDays = new Date(year, month + 1, 0).getDate();
             const prevLastDay = new Date(year, month, 0).getDate();
@@ -858,18 +1139,20 @@
 
         function openDayModal(year, month, day) {
             selectedDate = { year, month, day };
-            document.getElementById('modalDate').textContent = `${year}年${month+1}月${day}日`;
+            document.getElementById('modalDate').textContent = `${year}撟?{month+1}??{day}?匝;
             renderEventList();
             document.getElementById('dayModal').classList.add('active');
         }
         function closeModal() { document.getElementById('dayModal').classList.remove('active'); }
         function showAddForm() {
             editingEventId = null;
-            document.getElementById('eventModalTitle').textContent = '添加日程';
+            document.getElementById('eventModalTitle').textContent = '瘛餃??亦?';
             document.getElementById('eventForm').reset();
             if (ownerFilter) {
                 document.getElementById('eventOwner').value = ownerFilter;
             }
+            eventSyllabusRefs = [];
+            fillEventSyllabusSelectors(null);
             document.getElementById('eventModal').classList.add('active');
         }
         function closeEventModal() { document.getElementById('eventModal').classList.remove('active'); editingEventId = null; }
@@ -884,7 +1167,7 @@
             const dayEvents = events[key] ? Object.values(events[key]) : [];
             
             if (dayEvents.length === 0) { 
-                list.innerHTML = '<div class="no-events">📭 沒有日程</div>'; 
+                list.innerHTML = '<div class="no-events">? 瘝??亦?</div>'; 
                 return; 
             }
             dayEvents.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
@@ -894,10 +1177,11 @@
                         <h4>${e.title}
                         <span class="owner-badge ${e.owner}">${e.owner}</span></h4>
                         ${e.description ? `<p>${e.description}</p>` : ''}
+                        ${(e.syllabusRefs && e.syllabusRefs.length) ? `<div class="event-syllabus-tags">${e.syllabusRefs.map(r => `<span class="syl-tag">?? ${esc(r.schoolName || '')} ${esc(r.className || '')}${r.year ? `嚗?{esc(r.year)}嚗 : ''}${r.track ? `??{SYL_TRACK_LABELS[r.track] || ''}` : ''}${r.text ? ` 繚 ${esc(r.text)}` : ''}</span>`).join('')}</div>` : ''}
                     </div>
                     <div class="event-actions">
-                        <button class="edit-btn" onclick="editEvent('${e.id}')">編輯</button>
-                        <button class="delete-btn" onclick="deleteEvent('${e.id}')">刪除</button>
+                        <button class="edit-btn" onclick="editEvent('${e.id}')">蝺刻摩</button>
+                        <button class="delete-btn" onclick="deleteEvent('${e.id}')">?芷</button>
                     </div>
                 </div>
             `).join('');
@@ -911,10 +1195,11 @@
             events[key][id] = {
                 id, title: document.getElementById('eventTitle').value,
                 owner: document.getElementById('eventOwner').value,
-                description: document.getElementById('eventDescription').value
+                description: document.getElementById('eventDescription').value,
+                syllabusRefs: eventSyllabusRefs.slice()
             };
             saveLocalData(); syncToCloud(); renderCalendar(); renderEventList(); closeEventModal();
-            showToast('已保存', 'success');
+            showToast('撌脖?摮?, 'success');
         }
 
         function editEvent(id) {
@@ -922,20 +1207,22 @@
             const ev = events[key]?.[id];
             if (!ev) return;
             editingEventId = id;
-            document.getElementById('eventModalTitle').textContent = '編輯日程';
+            document.getElementById('eventModalTitle').textContent = '蝺刻摩?亦?';
             document.getElementById('eventTitle').value = ev.title || '';
             document.getElementById('eventOwner').value = ev.owner || 'yoyopan';
             document.getElementById('eventDescription').value = ev.description || '';
+            eventSyllabusRefs = (ev.syllabusRefs || []).map(r => ({ ...r }));
+            fillEventSyllabusSelectors(eventSyllabusRefs[0] || null);
             document.getElementById('eventModal').classList.add('active');
         }
 
         function deleteEvent(id) {
             if (!selectedDate) {
-                alert('錯誤：未選擇日期');
+                alert('?航炊嚗?豢??交?');
                 return;
             }
 
-            if (!confirm('確定要刪除此日程嗎？此操作無法復原。')) return;
+            if (!confirm('蝣箏?閬?斗迨?亦???甇斗?雿瘜儔??)) return;
             
             const key = `${selectedDate.year}-${String(selectedDate.month+1).padStart(2,'0')}-${String(selectedDate.day).padStart(2,'0')}`;
             
@@ -959,19 +1246,19 @@
                         renderCalendar();
                         renderEventList();
                     }
-                    showToast('已刪除', 'success');
+                    showToast('撌脣??, 'success');
                 })
                 .catch((error) => {
-                    console.error('[雲端刪除] 失敗:', error);
+                    console.error('[?脩垢?芷] 憭望?:', error);
                     if(deletedLocally) {
-                        showToast('本地已刪除，但同步失敗', 'error');
+                        showToast('?砍撌脣?歹?雿?甇亙仃??, 'error');
                     } else {
-                        showToast('刪除失敗，請檢查網路', 'error');
+                        showToast('?芷憭望?嚗?瑼Ｘ蝬脰楝', 'error');
                     }
                 });
         }
 
-        // ========== 學生報名功能 ==========
+        // ========== 摮貊??勗?? ==========
         function initStudents() {
             studentsRef = database.ref('students');
             studentsRef.on('value', (snapshot) => {
@@ -979,7 +1266,7 @@
                 renderStudentTable();
                 updateStatus(isConnected);
             }, (error) => {
-                console.error('[Firebase] 學生資料讀取錯誤:', error);
+                console.error('[Firebase] 摮貊?鞈?霈?隤?', error);
             });
         }
 
@@ -1022,8 +1309,8 @@
                     <option value="Fri">Fri</option>
                     <option value="Sat">Sat</option>
                 </select>
-                <input type="text" placeholder="活動內容" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
-                <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✕</button>
+                <input type="text" placeholder="瘣餃??批捆" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
+                <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">??/button>
             `;
             container.appendChild(row);
         }
@@ -1051,7 +1338,7 @@
                 return;
             }
             if (noData) noData.style.display = 'none';
-            if (count) count.textContent = `共 ${list.length} 筆資料`;
+            if (count) count.textContent = `??${list.length} 蝑??;
             list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             tbody.innerHTML = list.map(s => `
                 <tr>
@@ -1059,11 +1346,11 @@
                     <td style="padding:8px; border-bottom:1px solid #eee;">${s.englishName || '-'}</td>
                     <td style="padding:8px; border-bottom:1px solid #eee;">${s.class || '-'}</td>
                     <td style="padding:8px; border-bottom:1px solid #eee;">${s.mobile || '-'}</td>
-                    <td style="padding:8px; border-bottom:1px solid #eee; font-size:0.8em;">${(s.availableDays || []).join('、') || '-'}</td>
-                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.retained === 'yes' ? '✅ 留班' + (s.retainedGrade || '') : '❌ 無'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #eee; font-size:0.8em;">${(s.availableDays || []).join('??) || '-'}</td>
+                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.retained === 'yes' ? '???' + (s.retainedGrade || '') : '????}</td>
                     <td style="padding:8px; border-bottom:1px solid #eee; text-align:center;">
-                        <button class="edit-btn" onclick="editStudent('${s.id}')" style="padding:4px 10px;">編輯</button>
-                        <button class="delete-btn" onclick="deleteStudent('${s.id}')" style="padding:4px 10px;">刪除</button>
+                        <button class="edit-btn" onclick="editStudent('${s.id}')" style="padding:4px 10px;">蝺刻摩</button>
+                        <button class="delete-btn" onclick="deleteStudent('${s.id}')" style="padding:4px 10px;">?芷</button>
                     </td>
                 </tr>
             `).join('');
@@ -1071,7 +1358,7 @@
 
         function showStudentForm() {
             editingStudentId = null;
-            document.getElementById('studentFormTitle').textContent = '新增報名';
+            document.getElementById('studentFormTitle').textContent = '?啣??勗?';
             document.getElementById('studentForm').reset();
             document.getElementById('extracurricularContainer').innerHTML = '';
             toggleRetainedGrade(false);
@@ -1112,12 +1399,12 @@
 
             studentsRef.child(id).set(studentData)
                 .then(() => {
-                    showToast('已保存', 'success');
+                    showToast('撌脖?摮?, 'success');
                     closeStudentFormModal();
                 })
                 .catch((err) => {
-                    console.error('學生資料儲存失敗', err);
-                    showToast('儲存失敗，請檢查網路', 'error');
+                    console.error('摮貊?鞈??脣?憭望?', err);
+                    showToast('?脣?憭望?嚗?瑼Ｘ蝬脰楝', 'error');
                 });
         }
 
@@ -1125,7 +1412,7 @@
             const s = students[id];
             if (!s) return;
             editingStudentId = id;
-            document.getElementById('studentFormTitle').textContent = '編輯報名';
+            document.getElementById('studentFormTitle').textContent = '蝺刻摩?勗?';
             document.getElementById('studentChineseName').value = s.chineseName || '';
             document.getElementById('studentTransliteration').value = s.transliteration || '';
             document.getElementById('studentEnglishName').value = s.englishName || '';
@@ -1157,15 +1444,15 @@
                 row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px;';
                 row.innerHTML = `
                     <select style="flex:0 0 100px; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
-                        <option value="Mon"${ex.day === 'Mon' || ex.day === '星期一' ? ' selected' : ''}>Mon</option>
-                        <option value="Tue"${ex.day === 'Tue' || ex.day === '星期二' ? ' selected' : ''}>Tue</option>
-                        <option value="Wed"${ex.day === 'Wed' || ex.day === '星期三' ? ' selected' : ''}>Wed</option>
-                        <option value="Thu"${ex.day === 'Thu' || ex.day === '星期四' ? ' selected' : ''}>Thu</option>
-                        <option value="Fri"${ex.day === 'Fri' || ex.day === '星期五' ? ' selected' : ''}>Fri</option>
-                        <option value="Sat"${ex.day === 'Sat' || ex.day === '星期六' ? ' selected' : ''}>Sat</option>
+                        <option value="Mon"${ex.day === 'Mon' || ex.day === '??銝' ? ' selected' : ''}>Mon</option>
+                        <option value="Tue"${ex.day === 'Tue' || ex.day === '??鈭? ? ' selected' : ''}>Tue</option>
+                        <option value="Wed"${ex.day === 'Wed' || ex.day === '??銝? ? ' selected' : ''}>Wed</option>
+                        <option value="Thu"${ex.day === 'Thu' || ex.day === '???? ? ' selected' : ''}>Thu</option>
+                        <option value="Fri"${ex.day === 'Fri' || ex.day === '??鈭? ? ' selected' : ''}>Fri</option>
+                        <option value="Sat"${ex.day === 'Sat' || ex.day === '???? ? ' selected' : ''}>Sat</option>
                     </select>
-                    <input type="text" placeholder="活動內容" value="${ex.content || ''}" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
-                    <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✕</button>
+                    <input type="text" placeholder="瘣餃??批捆" value="${ex.content || ''}" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
+                    <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">??/button>
                 `;
                 container.appendChild(row);
             });
@@ -1180,28 +1467,28 @@
         }
 
         function deleteStudent(id) {
-            if (!confirm('確定要刪除此學生報名嗎？此操作無法復原。')) return;
+            if (!confirm('蝣箏?閬?斗迨摮貊??勗???甇斗?雿瘜儔??)) return;
             studentsRef.child(id).remove()
-                .then(() => showToast('已刪除', 'success'))
+                .then(() => showToast('撌脣??, 'success'))
                 .catch((err) => {
-                    console.error('刪除失敗', err);
-                    showToast('刪除失敗，請檢查網路', 'error');
+                    console.error('?芷憭望?', err);
+                    showToast('?芷憭望?嚗?瑼Ｘ蝬脰楝', 'error');
                 });
         }
 
         function clearAllStudents() {
             const count = Object.keys(students).length;
             if (count === 0) {
-                showToast('目前沒有學生資料', 'info');
+                showToast('?桀?瘝?摮貊?鞈?', 'info');
                 return;
             }
-            if (!confirm(`確定要清空全部 ${count} 筆學生資料嗎？`)) return;
-            if (!confirm('⚠️ 最後確認：此操作會永久刪除所有學生報名資料，無法復原！')) return;
+            if (!confirm(`蝣箏?閬?蝛箏??${count} 蝑飛????嚗)) return;
+            if (!confirm('?? ?敺Ⅱ隤?甇斗?雿?瘞訾??芷??飛??????⊥?敺拙?嚗?)) return;
             studentsRef.remove()
-                .then(() => showToast('已清空所有學生資料', 'success'))
+                .then(() => showToast('撌脫?蝛箸??飛????, 'success'))
                 .catch((err) => {
-                    console.error('清空失敗', err);
-                    showToast('清空失敗，請檢查網路', 'error');
+                    console.error('皜征憭望?', err);
+                    showToast('皜征憭望?嚗?瑼Ｘ蝬脰楝', 'error');
                 });
         }
 
@@ -1209,29 +1496,29 @@
             try {
                 const list = Object.values(students);
                 if (list.length === 0) {
-                    showToast('暫無資料可匯出', 'error');
+                    showToast('?怎鞈??臬??, 'error');
                     return;
                 }
                 const wb = new ExcelJS.Workbook();
-                const ws = wb.addWorksheet('學生報名');
+                const ws = wb.addWorksheet('摮貊??勗?');
                 ws.columns = [
-                    { header: '中文姓名', key: 'chineseName', width: 12 },
-                    { header: '中文姓名譯音', key: 'transliteration', width: 16 },
+                    { header: '銝剜?憪?', key: 'chineseName', width: 12 },
+                    { header: '銝剜?憪?霅舫', key: 'transliteration', width: 16 },
                     { header: 'English Name', key: 'englishName', width: 16 },
                     { header: 'Class', key: 'class', width: 10 },
                     { header: 'Mobile No', key: 'mobile', width: 14 },
-                    { header: '姓名(父親)', key: 'fatherName', width: 12 },
-                    { header: '電話(父親)', key: 'fatherPhone', width: 14 },
-                    { header: '姓名(母親)', key: 'motherName', width: 12 },
-                    { header: '電話(母親)', key: 'motherPhone', width: 14 },
-                    { header: '其他聯絡人', key: 'otherContact', width: 12 },
-                    { header: '電話(其他聯絡人)', key: 'otherContactPhone', width: 14 },
+                    { header: '憪?(?嗉扛)', key: 'fatherName', width: 12 },
+                    { header: '?餉店(?嗉扛)', key: 'fatherPhone', width: 14 },
+                    { header: '憪?(瘥扛)', key: 'motherName', width: 12 },
+                    { header: '?餉店(瘥扛)', key: 'motherPhone', width: 14 },
+                    { header: '?嗡??舐窗鈭?, key: 'otherContact', width: 12 },
+                    { header: '?餉店(?嗡??舐窗鈭?', key: 'otherContactPhone', width: 14 },
                     { header: 'Birth', key: 'birth', width: 14 },
-                    { header: '可補習日子', key: 'availableDays', width: 20 },
-                    { header: '校外活動', key: 'extracurricular', width: 30 },
-                    { header: '留班', key: 'retainedLabel', width: 8 },
-                    { header: '留班年級', key: 'retainedGrade', width: 10 },
-                    { header: '登記日期', key: 'registerDate', width: 12 }
+                    { header: '?航?蝧摮?, key: 'availableDays', width: 20 },
+                    { header: '?∪?瘣餃?', key: 'extracurricular', width: 30 },
+                    { header: '?', key: 'retainedLabel', width: 8 },
+                    { header: '?撟渡?', key: 'retainedGrade', width: 10 },
+                    { header: '?餉??交?', key: 'registerDate', width: 12 }
                 ];
                 list.forEach(s => {
                     ws.addRow({
@@ -1247,15 +1534,14 @@
                         otherContact: s.otherContact || '',
                         otherContactPhone: s.otherContactPhone || '',
                         birth: s.birth || '',
-                        availableDays: (s.availableDays || []).join('、'),
+                        availableDays: (s.availableDays || []).join('??),
                         extracurricular: (s.extracurricular || []).map(e => `${e.day}:${e.content}`).join('; '),
-                        retainedLabel: s.retained === 'yes' ? '有' : '無',
+                        retainedLabel: s.retained === 'yes' ? '?? : '??,
                         retainedGrade: s.retainedGrade || '',
                         registerDate: s.registerDate || ''
                     });
                 });
-                // 主要聯絡人姓名與電話以紅色字體輸出（欄位：6=父名,7=父電,8=母名,9=母電,10=其他,11=其他電話）
-                const PRIMARY_COLS = { father: [6, 7], mother: [8, 9], other: [10, 11] };
+                // 銝餉??舐窗鈭箏????餉店隞亦??脣?擃撓?綽?甈?嚗?=?嗅?,7=?園,8=瘥?,9=瘥,10=?嗡?,11=?嗡??餉店嚗?                const PRIMARY_COLS = { father: [6, 7], mother: [8, 9], other: [10, 11] };
                 ws.eachRow((row, rowNum) => {
                     if (rowNum === 1) return;
                     const s = list[rowNum - 2];
@@ -1269,15 +1555,15 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `學生報名表_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                a.download = `摮貊??勗?銵灶${new Date().toISOString().slice(0, 10)}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                showToast(`已匯出 ${list.length} 筆資料`, 'success');
+                showToast(`撌脣??${list.length} 蝑??, 'success');
             } catch (err) {
-                console.error('匯出失敗', err);
-                showToast('匯出失敗，請重試', 'error');
+                console.error('?臬憭望?', err);
+                showToast('?臬憭望?嚗??岫', 'error');
             }
         }
 
@@ -1288,8 +1574,8 @@
             const yearSelS = document.getElementById('exportStartYear');
             const yearSelE = document.getElementById('exportEndYear');
             for (let y = curYear - 3; y <= curYear + 3; y++) {
-                yearSelS.add(new Option(y + '年', y));
-                yearSelE.add(new Option(y + '年', y));
+                yearSelS.add(new Option(y + '撟?, y));
+                yearSelE.add(new Option(y + '撟?, y));
             }
             yearSelS.value = curYear;
             yearSelE.value = curYear;
@@ -1303,7 +1589,7 @@
         }
 
         function buildExportRangeOptions() {
-            const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const months = ['1??, '2??, '3??, '4??, '5??, '6??, '7??, '8??, '9??, '10??, '11??, '12??];
             const sm = document.getElementById('exportStartMonth');
             const em = document.getElementById('exportEndMonth');
             sm.innerHTML = '';
@@ -1320,7 +1606,7 @@
             const endYear = parseInt(document.getElementById('exportEndYear').value, 10);
             const endMonth = parseInt(document.getElementById('exportEndMonth').value, 10);
             if (startYear * 12 + startMonth > endYear * 12 + endMonth) {
-                showToast('結束月份必須晚於或等於起始月份', 'error');
+                showToast('蝯??遢敹?????潸絲憪?隞?, 'error');
                 return;
             }
             exportCalendarToExcel(startYear, startMonth, endYear, endMonth);
@@ -1348,16 +1634,17 @@
                     });
                 });
                 if (filtered.length === 0) {
-                    showToast('所選月份段暫無日程可匯出', 'error');
+                    showToast('??豢?隞賣挾?怎?亦??臬??, 'error');
                     return;
                 }
                 const wb = new ExcelJS.Workbook();
                 const ws = wb.addWorksheet(calName);
                 ws.columns = [
-                    { header: '日期', key: 'date', width: 14 },
-                    { header: '事項', key: 'title', width: 30 },
-                    { header: '負責人', key: 'owner', width: 12 },
-                    { header: '備註', key: 'description', width: 40 }
+                    { header: '?交?', key: 'date', width: 14 },
+                    { header: '鈭?', key: 'title', width: 30 },
+                    { header: '鞎痊鈭?, key: 'owner', width: 12 },
+                    { header: '?酉', key: 'description', width: 40 },
+                    { header: '撠? Syllabus', key: 'syllabus', width: 38 }
                 ];
                 filtered.sort((a, b) => {
                     if (a.date !== b.date) return a.date.localeCompare(b.date);
@@ -1370,7 +1657,8 @@
                         date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
                         title: evt.title,
                         owner: OWNER_LABELS[evt.owner] || evt.owner,
-                        description: evt.description || ''
+                        description: evt.description || '',
+                        syllabus: (evt.syllabusRefs || []).map(r => `${r.track ? `[蝚?{r.track}? ` : ''}${r.schoolName || ''} ${r.className || ''}${r.year ? `(${r.year})` : ''}${r.text ? ' ' + r.text : ''}`.trim()).join('; ')
                     });
                 });
                 const buf = await wb.xlsx.writeBuffer();
@@ -1383,14 +1671,14 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                showToast(`已匯出 ${calName} ${filtered.length} 筆日程`, 'success');
+                showToast(`撌脣??${calName} ${filtered.length} 蝑蝔, 'success');
             } catch (err) {
-                console.error('匯出日程失敗', err);
-                showToast('匯出日程失敗，請重試', 'error');
+                console.error('?臬?亦?憭望?', err);
+                showToast('?臬?亦?憭望?嚗??岫', 'error');
             }
         }
 
-        // ===== 日程 Excel 匯入功能 =====
+        // ===== ?亦? Excel ?臬? =====
         function triggerCalendarImport() {
             document.getElementById('calendarImportFileInput').click();
         }
@@ -1402,8 +1690,8 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 importCalendarWorkbook(e.target.result).catch((err) => {
-                    console.error('匯入日程失敗', err);
-                    showToast('匯入日程失敗：無法讀取檔案', 'error');
+                    console.error('?臬?亦?憭望?', err);
+                    showToast('?臬?亦?憭望?嚗瘜???獢?, 'error');
                 });
             };
             reader.readAsArrayBuffer(file);
@@ -1415,7 +1703,7 @@
 
             const ws = workbook.worksheets[0];
             if (!ws) {
-                showToast('無資料可匯入', 'error');
+                showToast('?∟???臬', 'error');
                 return;
             }
 
@@ -1424,14 +1712,14 @@
             let headerVals = [];
             for (let r = 1; r <= maxScan; r++) {
                 const vals = ws.getRow(r).values || [];
-                if (vals.some(c => ['日期', '事項', '標題'].includes(normHeader(importCellStr(c))))) {
+                if (vals.some(c => ['?交?', '鈭?', '璅?'].includes(normHeader(importCellStr(c))))) {
                     headerRowNum = r;
                     headerVals = vals;
                     break;
                 }
             }
             if (!headerRowNum) {
-                showToast('找不到「日期」/「事項」標題列', 'error');
+                showToast('?曆??啜??????憿?', 'error');
                 return;
             }
 
@@ -1445,10 +1733,10 @@
                 return -1;
             };
 
-            const dateCol = col('日期');
-            const titleCol = col('事項', '標題', 'title');
-            const ownerCol = col('負責人', 'owner');
-            const descCol = col('備註', 'description');
+            const dateCol = col('?交?');
+            const titleCol = col('鈭?', '璅?', 'title');
+            const ownerCol = col('鞎痊鈭?, 'owner');
+            const descCol = col('?酉', 'description');
 
             const OWNER_MAP = { gaspar: 'gaspar', yoyopan: 'yoyopan', annie: 'annie', candy: 'candy' };
 
@@ -1496,7 +1784,7 @@
             }
 
             if (imported === 0) {
-                showToast(skipped > 0 ? `所有日程（${skipped} 筆）均與現有日程重複，未匯入` : '沒有找到可匯入的日程', 'error');
+                showToast(skipped > 0 ? `??蝔?${skipped} 蝑????暹??亦???嚗?臬` : '瘝??曉?臬?亦??亦?', 'error');
                 return;
             }
 
@@ -1508,12 +1796,12 @@
             syncToCloud();
             renderCalendar();
             if (selectedDate) renderEventList();
-            showToast(skipped > 0 ? `成功匯入 ${imported} 筆，跳過 ${skipped} 筆重複日程` : `成功匯入 ${imported} 筆日程`, 'success');
+            showToast(skipped > 0 ? `???臬 ${imported} 蝑?頝喲? ${skipped} 蝑?銴蝔 : `???臬 ${imported} 蝑蝔, 'success');
         }
 
-        // ===== Excel 匯入功能 =====
+        // ===== Excel ?臬? =====
         function normHeader(s) {
-            return String(s || '').replace(/\s+/g, '').replace(/（/g, '(').replace(/）/g, ')').toLowerCase();
+            return String(s || '').replace(/\s+/g, '').replace(/嚗?g, '(').replace(/嚗?g, ')').toLowerCase();
         }
 
         function importCellStr(v) {
@@ -1534,12 +1822,12 @@
             const file = input.files[0];
             input.value = '';
             if (!file) return;
-            const clearExisting = confirm('匯入方式：\n\n「確定」＝ 清空現有學生資料後匯入\n「取消」＝ 保留現有資料，附加匯入');
+            const clearExisting = confirm('?臬?孵?嚗n\n?Ⅱ摰? 皜征?暹?摮貊?鞈?敺?功n??瘨? 靽??暹?鞈?嚗????);
             const reader = new FileReader();
             reader.onload = (e) => {
                 processImportWorkbook(e.target.result, clearExisting).catch((err) => {
-                    console.error('匯入失敗', err);
-                    showToast('匯入失敗：無法讀取檔案', 'error');
+                    console.error('?臬憭望?', err);
+                    showToast('?臬憭望?嚗瘜???獢?, 'error');
                 });
             };
             reader.readAsArrayBuffer(file);
@@ -1567,7 +1855,7 @@
                 const maxScan = Math.min(ws.rowCount || 0, 20);
                 for (let r = 1; r <= maxScan; r++) {
                     const vals = ws.getRow(r).values || [];
-                    if (vals.some(c => normHeader(importCellStr(c)) === '中文名')) {
+                    if (vals.some(c => normHeader(importCellStr(c)) === '銝剜???)) {
                         targetWs = ws;
                         headerRowNum = r;
                         headerVals = vals;
@@ -1576,11 +1864,11 @@
                 }
             }
             if (!targetWs) {
-                showToast('找不到「中文名」標題列，請確認是報名表格式', 'error');
+                showToast('?曆??啜葉????憿?嚗?蝣箄??臬?”?澆?', 'error');
                 return;
             }
 
-            // ExcelJS 欄位編號由 1 開始
+            // ExcelJS 甈?蝺刻???1 ??
             const headersN = [];
             headerVals.forEach((v, idx) => { headersN[idx] = normHeader(importCellStr(v)); });
             const col = (...names) => {
@@ -1592,17 +1880,17 @@
             };
 
             const cMap = {
-                chineseName: col('中文名'),
-                transliteration: col('譯名'),
+                chineseName: col('銝剜???),
+                transliteration: col('霅臬?'),
                 englishName: col('name'),
                 class: col('class'),
                 mobile: col('mobile no.', 'mobile'),
-                fatherName: col('姓名(父親)'),
-                fatherPhone: col('電話(父親)'),
-                motherName: col('姓名(母親)'),
-                motherPhone: col('電話(母親)'),
-                otherContact: col('其他聯絡人', '其他'),
-                otherContactPhone: col('電話(其他聯絡人)', '電話(其他)'),
+                fatherName: col('憪?(?嗉扛)'),
+                fatherPhone: col('?餉店(?嗉扛)'),
+                motherName: col('憪?(瘥扛)'),
+                motherPhone: col('?餉店(瘥扛)'),
+                otherContact: col('?嗡??舐窗鈭?, '?嗡?'),
+                otherContactPhone: col('?餉店(?嗡??舐窗鈭?', '?餉店(?嗡?)'),
                 birth: col('birth')
             };
 
@@ -1678,23 +1966,1284 @@
             }
 
             if (imported === 0) {
-                showToast('沒有找到可匯入的學生資料', 'error');
+                showToast('瘝??曉?臬?亦?摮貊?鞈?', 'error');
                 return;
             }
 
             const doneMsg = () => showToast(
-                redCount > 0 ? `成功匯入 ${imported} 筆（${redCount} 筆偵測到紅色主要聯絡人）` : `成功匯入 ${imported} 筆學生資料`,
+                redCount > 0 ? `???臬 ${imported} 蝑?${redCount} 蝑皜砍蝝銝餉??舐窗鈭綽?` : `???臬 ${imported} 蝑飛???,
                 'success'
             );
             const failMsg = (err) => {
-                console.error('匯入失敗', err);
-                showToast('匯入失敗，請檢查網路連線', 'error');
+                console.error('?臬憭望?', err);
+                showToast('?臬憭望?嚗?瑼Ｘ蝬脰楝???', 'error');
             };
             if (clearExisting) {
                 studentsRef.set(records).then(doneMsg).catch(failMsg);
             } else {
                 studentsRef.update(records).then(doneMsg).catch(failMsg);
             }
+        }
+
+        // ========== 摮豢 Syllabus 璅∠? ==========
+        function esc(s) {
+            return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function initSyllabus() {
+            try {
+                const cached = localStorage.getItem(SYLLABUS_CACHE_KEY);
+                syllabus = cached ? (JSON.parse(cached) || {}) : {};
+            } catch (e) {
+                console.error('霈??Syllabus ?砍敹怠?憭望?', e);
+                syllabus = {};
+            }
+            syllabusRef = database.ref('syllabus');
+            syllabusRef.on('value', (snapshot) => {
+                syllabus = snapshot.val() || {};
+                migrateSyllabusToYears();
+                try {
+                    localStorage.setItem(SYLLABUS_CACHE_KEY, JSON.stringify(syllabus));
+                } catch (e) { /* 敹賜摰寥??? */ }
+                registerYearsFromData();
+                renderSyllabusYearFilter();
+                renderSyllabusTree();
+                renderSyllabusItems();
+                const modal = document.getElementById('eventModal');
+                if (modal && modal.classList.contains('active')) renderEventSyllabusOptions();
+            }, (error) => {
+                console.error('[Firebase] Syllabus 霈?隤?', error);
+            });
+
+            // ?函頂蝯勗飛撟湔??殷??函?蝭暺?頝典飛?∪?剁?
+            syllabusYearsRef = database.ref('syllabusYears');
+            syllabusYearsRef.on('value', (snapshot) => {
+                syllabusYears = snapshot.val() || {};
+                registerYearsFromData();
+                renderSyllabusYearFilter();
+                renderSyllabusTree();
+                renderSyllabusItems();
+            }, (error) => {
+                console.error('[Firebase] 摮詨僑皜霈?隤?', error);
+            });
+        }
+
+        // ??瑽?class.items + class.year嚗? ?啁?瑽?class.years[year].items嚗?        function migrateSyllabusToYears() {
+            if (syllabusYearBackfillDone) return;
+            const updates = {};
+            let dirty = false;
+            Object.values(syllabus).forEach(s => {
+                Object.values(s.classes || {}).forEach(c => {
+                    if (c.years) return;
+                    const year = normalizeYear(c.year) || DEFAULT_SCHOOL_YEAR;
+                    const items = c.items || {};
+                    c.years = { [year]: { createdAt: c.createdAt || Date.now(), items } };
+                    delete c.items;
+                    delete c.year;
+                    dirty = true;
+                    if (s.id && c.id) {
+                        updates[`syllabus/${s.id}/classes/${c.id}/years/${year}`] =
+                            { createdAt: c.createdAt || Date.now(), items };
+                        updates[`syllabus/${s.id}/classes/${c.id}/items`] = null;
+                        updates[`syllabus/${s.id}/classes/${c.id}/year`] = null;
+                    }
+                });
+            });
+            if (!dirty) return;
+            syllabusYearBackfillDone = true;
+            database.ref().update(updates).catch(err => {
+                console.error('[Firebase] Syllabus 蝯??瑞宏憭望?', err);
+            });
+        }
+
+        // 撠???箇??摮詨僑鋆?函頂蝯勗飛撟湔???        function registerYearsFromData() {
+            if (!syllabusYearsRef) return;
+            const updates = {};
+            establishedYears().forEach(y => {
+                if (!syllabusYears[y]) updates[`syllabusYears/${y}`] = { createdAt: Date.now() };
+            });
+            if (!Object.keys(updates).length) return;
+            Object.keys(updates).forEach(k => { syllabusYears[k.split('/')[1]] = { createdAt: Date.now() }; });
+            database.ref().update(updates).catch(err => {
+                console.error('[Firebase] 摮詨僑皜鋆神憭望?', err);
+            });
+        }
+
+        function normalizeYear(v) {
+            if (v === null || v === undefined) return '';
+            const m = String(v).match(/(\d{4})\s*[-??]\s*(\d{4})/);
+            if (m) return `${m[1]}-${m[2]}`;
+            const single = String(v).match(/(\d{4})/);
+            if (single) {
+                const y = parseInt(single[1], 10);
+                return `${y}-${y + 1}`;
+            }
+            return '';
+        }
+
+        function classYears(cls) {
+            if (!cls) return [];
+            const set = new Set(Object.keys(cls.years || {}));
+            if (cls.year) set.add(normalizeYear(cls.year) || DEFAULT_SCHOOL_YEAR);
+            return Array.from(set).filter(Boolean).sort((a, b) => b.localeCompare(a));
+        }
+
+        // ?剔???堆??銝嚗飛撟湛?classYears(cls)[0]
+        function classYearItems(cls, year) {
+            return (cls && cls.years && cls.years[year] && cls.years[year].items) || {};
+        }
+
+        // 撌脣遣蝡?摮詨僑嚗蝟餌絞嚗?        function establishedYears() {
+            const set = new Set(Object.keys(syllabusYears || {}));
+            set.add(DEFAULT_SCHOOL_YEAR);
+            Object.values(syllabus).forEach(s => {
+                Object.values(s.classes || {}).forEach(c => {
+                    classYears(c).forEach(y => set.add(y));
+                });
+            });
+            return Array.from(set).filter(Boolean).sort((a, b) => b.localeCompare(a));
+        }
+
+        function renderSyllabusYearFilter() {
+            const sel = document.getElementById('syllabusYearFilter');
+            if (!sel) return;
+            const years = establishedYears();
+            if (!years.includes(syllabusYearFilter)) syllabusYearFilter = years[0] || DEFAULT_SCHOOL_YEAR;
+            sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+            sel.value = syllabusYearFilter;
+        }
+
+        function onSyllabusYearFilterChange() {
+            const sel = document.getElementById('syllabusYearFilter');
+            syllabusYearFilter = sel ? sel.value : DEFAULT_SCHOOL_YEAR;
+            cancelSyllabusEdit();
+            renderSyllabusTree();
+            renderSyllabusItems();
+        }
+
+        function getSchool(id) { return id ? (syllabus[id] || null) : null; }
+        function getSylClass(schoolId, classId) {
+            const s = getSchool(schoolId);
+            return s && s.classes && classId ? (s.classes[classId] || null) : null;
+        }
+        function sortedSchools() {
+            return Object.values(syllabus).sort((a, b) =>
+                String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant'));
+        }
+        function sortedClasses(schoolId) {
+            const s = getSchool(schoolId);
+            if (!s || !s.classes) return [];
+            // ?剔??芸遣蝡?甈∴?頝典飛撟游?典?銝??            return Object.values(s.classes).sort((a, b) =>
+                String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant', { numeric: true }));
+        }
+        function filteredClasses(schoolId) {
+            return sortedClasses(schoolId);
+        }
+        const SYL_TRACK_LABELS = { 1: '蝚砌???, 2: '蝚砌??? };
+        // YW 摮豢銵??芋撘?瘥 Syllabus ?洵銝??蝚砌??蒂銵?        function isDoubleLayoutSchool(school) {
+            if (!school) return false;
+            if (school.layout === 'double') return true;
+            return /^YW/i.test(String(school.name || '').trim());
+        }
+        function itemTrack(it) {
+            return Number(it && it.track) === 2 ? 2 : 1;
+        }
+        function classItemsByTrack(schoolId, classId, track, year) {
+            return classItems(schoolId, classId, year).filter(it => itemTrack(it) === track);
+        }
+        function classItems(schoolId, classId, year) {
+            const c = getSylClass(schoolId, classId);
+            const y = year || syllabusYearFilter;
+            const items = classYearItems(c, y);
+            return Object.values(items).sort((a, b) => {
+                const ta = itemTrack(a);
+                const tb = itemTrack(b);
+                if (ta !== tb) return ta - tb;
+                const ao = typeof a.order === 'number' ? a.order : 0;
+                const bo = typeof b.order === 'number' ? b.order : 0;
+                if (ao !== bo) return ao - bo;
+                return String(a.text || '').localeCompare(String(b.text || ''), 'zh-Hant');
+            });
+        }
+        function classYearRef(schoolId, classId, year) {
+            return syllabusRef.child(schoolId).child('classes').child(classId).child('years').child(year);
+        }
+
+        function openSyllabusModal() {
+            renderSyllabusYearFilter();
+            renderSyllabusTree();
+            renderSyllabusItems();
+            document.getElementById('syllabusModal').classList.add('active');
+        }
+        function closeSyllabusModal() {
+            document.getElementById('syllabusModal').classList.remove('active');
+            cancelSyllabusEdit();
+        }
+
+        function renderSyllabusTree() {
+            const el = document.getElementById('syllabusTree');
+            if (!el) return;
+            const schools = sortedSchools();
+            if (!schools.length) {
+                el.innerHTML = '<div class="tree-empty">撠?啣?摮豢<br>?? ?啣?摮豢??憪?/div>';
+                return;
+            }
+            el.innerHTML = schools.map(s => {
+                const classes = filteredClasses(s.id);
+                const isOpen = syllabusSel.schoolId === s.id;
+                const classHtml = classes.length ? classes.map(c => {
+                    const years = classYears(c);
+                    const joined = years.includes(syllabusYearFilter);
+                    const count = joined ? classItems(s.id, c.id, syllabusYearFilter).length : 0;
+                    const badge = joined
+                        ? `<span class="tree-year">${count} ??/span>`
+                        : `<span class="tree-year muted">?芸??交迨摮詨僑</span>`;
+                    const title = years.length ? `摮詨僑嚗?{years.join('??)}` : '?芸??乩遙雿飛撟?;
+                    return `
+                    <div class="tree-class ${syllabusSel.classId === c.id ? 'active' : ''}" title="${esc(title)}" onclick="selectSyllabusClass('${s.id}','${c.id}')">
+                        <span>?? ${esc(c.name)}${badge}</span>
+                        <span class="tree-actions">
+                            <button type="button" onclick="renameClass('${s.id}','${c.id}',event)" title="??賢?">??/button>
+                            <button type="button" onclick="deleteClass('${s.id}','${c.id}',event)" title="?芷?剔?">??</button>
+                        </span>
+                    </div>`;
+                }).join('') : `<div class="tree-hint">嚗?啣??剔?嚗?/div>`;
+                return `<div class="tree-school">
+                    <div class="tree-school-head ${isOpen ? 'active' : ''}" onclick="selectSyllabusSchool('${s.id}')">
+                        <span>? ${esc(s.name)}</span>
+                        <span class="tree-actions">
+                            <button type="button" onclick="renameSchool('${s.id}',event)" title="??賢?">??/button>
+                            <button type="button" onclick="deleteSchool('${s.id}',event)" title="?芷摮豢">??</button>
+                        </span>
+                    </div>
+                    ${isOpen ? classHtml : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function selectSyllabusSchool(schoolId) {
+            if (syllabusSel.schoolId === schoolId && syllabusSel.classId) {
+                syllabusSel = { schoolId, classId: null };
+            } else {
+                const classes = filteredClasses(schoolId);
+                syllabusSel = { schoolId, classId: classes.length ? classes[0].id : null };
+            }
+            cancelSyllabusEdit();
+            renderSyllabusTree();
+            renderSyllabusItems();
+        }
+
+        function selectSyllabusClass(schoolId, classId) {
+            syllabusSel = { schoolId, classId };
+            cancelSyllabusEdit();
+            renderSyllabusTree();
+            renderSyllabusItems();
+        }
+
+        function addSchoolPrompt() {
+            if (!syllabusRef) { showToast('撠???嚗?蝔??岫', 'error'); return; }
+            const name = (prompt('隢撓?亙飛?∪?蝔梧?靘?嚗?瘝?ｇ?') || '').trim();
+            if (!name) return;
+            const id = 's' + Date.now();
+            const isYW = /^YW/i.test(name);
+            syllabusRef.child(id).set({ id, name, createdAt: Date.now(), layout: isYW ? 'double' : 'single', classes: {} })
+                .then(() => {
+                    syllabusSel = { schoolId: id, classId: null };
+                    renderSyllabusTree();
+                    renderSyllabusItems();
+                    showToast('撌脫憓飛?∴?' + name, 'success');
+                })
+                .catch(err => { console.error(err); showToast('?啣?摮豢憭望?', 'error'); });
+        }
+
+        function addClassPrompt() {
+            if (!syllabusRef) { showToast('撠???嚗?蝔??岫', 'error'); return; }
+            if (!syllabusSel.schoolId) { showToast('隢??豢?摮豢', 'error'); return; }
+            const school = getSchool(syllabusSel.schoolId);
+            const name = (prompt(`隢撓?乓?{school ? school.name : ''}???剔?嚗?憒?F3A嚗n嚗???桀?摮詨僑嚗?{syllabusYearFilter}嚗) || '').trim();
+            if (!name) return;
+            const dup = sortedClasses(syllabusSel.schoolId).find(c =>
+                String(c.name || '').trim().toLowerCase() === name.toLowerCase());
+            if (dup) {
+                syllabusSel.classId = dup.id;
+                renderSyllabusTree();
+                renderSyllabusItems();
+                showToast(`?剔???{dup.name}?歇摮嚗??豢?閬??亦?摮詨僑`, 'info');
+                openYearPicker(syllabusSel.schoolId, dup.id);
+                return;
+            }
+            const year = syllabusYearFilter;
+            const id = 'c' + Date.now();
+            syllabusRef.child(syllabusSel.schoolId).child('classes').child(id)
+                .set({ id, name, createdAt: Date.now(), years: { [year]: { createdAt: Date.now(), items: {} } } })
+                .then(() => {
+                    syllabusSel.classId = id;
+                    renderSyllabusTree();
+                    renderSyllabusItems();
+                    showToast(`撌脫憓蝝?${name}嚗?{year}嚗, 'success');
+                })
+                .catch(err => { console.error(err); showToast('?啣??剔?憭望?', 'error'); });
+        }
+
+        // ----- 摮詨僑?豢?嚗憓?-----
+        function openYearPicker(schoolId, classId) {
+            sylYearModalContext = { schoolId: schoolId || null, classId: classId || null };
+            const cls = getSylClass(sylYearModalContext.schoolId, sylYearModalContext.classId);
+            const hint = document.getElementById('sylYearHint');
+            if (hint) {
+                hint.innerHTML = cls
+                    ? `??<b>${esc(cls.name)}</b> ?摮詨僑嚗?賡撌脣遣蝡?摮詨僑嚗?撱箇??啣飛撟湛??函頂蝯勗?剁??
+                    : '撱箇??啣飛撟游?嚗??飛?∴??剔??賢隞乩蝙?具?;
+            }
+            const list = document.getElementById('sylYearList');
+            if (list) {
+                const years = establishedYears();
+                list.innerHTML = years.map(y => {
+                    const has = cls ? classYears(cls).includes(y) : false;
+                    return `<button type="button" class="syl-year-option" ${has ? 'disabled' : ''}
+                        onclick="pickSyllabusYear('${y}')">${has ? '??' : '嚗?'}${esc(y)}${has ? '嚗歇?嚗? : ''}</button>`;
+                }).join('');
+            }
+            const input = document.getElementById('sylYearNewInput');
+            if (input) input.value = nextSchoolYear();
+            document.getElementById('sylYearModal').classList.add('active');
+        }
+
+        function closeYearPicker() {
+            document.getElementById('sylYearModal').classList.remove('active');
+        }
+
+        function nextSchoolYear() {
+            const latest = establishedYears()[0] || DEFAULT_SCHOOL_YEAR;
+            const start = parseInt(latest.slice(0, 4), 10) + 1;
+            return `${start}-${start + 1}`;
+        }
+
+        function registerSyllabusYear(year) {
+            if (!syllabusYearsRef || syllabusYears[year]) return Promise.resolve();
+            syllabusYears[year] = { createdAt: Date.now() };
+            return syllabusYearsRef.child(year).set({ createdAt: Date.now() });
+        }
+
+        function ensureClassYear(schoolId, classId, year) {
+            const cls = getSylClass(schoolId, classId);
+            if (!cls) return Promise.resolve();
+            if (cls.years && cls.years[year]) return Promise.resolve();
+            if (!cls.years) cls.years = {};
+            cls.years[year] = { createdAt: Date.now(), items: {} };
+            return syllabusRef.child(schoolId).child('classes').child(classId)
+                .child('years').child(year).set({ createdAt: Date.now(), items: {} });
+        }
+
+        function pickSyllabusYear(year) {
+            const { schoolId, classId } = sylYearModalContext;
+            syllabusYearFilter = year;
+            const finish = () => {
+                closeYearPicker();
+                renderSyllabusYearFilter();
+                renderSyllabusTree();
+                renderSyllabusItems();
+                showToast(`撌脣??摮詨僑嚗?{year}`, 'success');
+            };
+            registerSyllabusYear(year).catch(err => console.error(err));
+            if (schoolId && classId) {
+                ensureClassYear(schoolId, classId, year)
+                    .then(finish)
+                    .catch(err => { console.error(err); showToast('?摮詨僑憭望?', 'error'); });
+            } else {
+                finish();
+            }
+        }
+
+        function createYearFromModal() {
+            const input = document.getElementById('sylYearNewInput');
+            const year = normalizeYear(input ? input.value : '');
+            if (!year) { showToast('摮詨僑?澆?銝迤蝣綽?隢 2026-2027', 'error'); return; }
+            const { schoolId, classId } = sylYearModalContext;
+            syllabusYearFilter = year;
+            const finish = () => {
+                closeYearPicker();
+                renderSyllabusYearFilter();
+                renderSyllabusTree();
+                renderSyllabusItems();
+                showToast(`撌脣遣蝡飛撟湛?${year}`, 'success');
+            };
+            registerSyllabusYear(year)
+                .then(() => (schoolId && classId) ? ensureClassYear(schoolId, classId, year) : null)
+                .then(finish)
+                .catch(err => { console.error(err); showToast('撱箇?摮詨僑憭望?', 'error'); });
+        }
+
+        function addYearToOpenClass() {
+            openYearPicker(syllabusSel.schoolId, syllabusSel.classId);
+        }
+
+        function openYearPickerForSelection() {
+            openYearPicker(syllabusSel.schoolId, syllabusSel.classId);
+        }
+
+        function switchClassYear(year) {
+            syllabusYearFilter = year;
+            const sel = document.getElementById('syllabusYearFilter');
+            if (sel) sel.value = year;
+            cancelSyllabusEdit();
+            renderSyllabusTree();
+            renderSyllabusItems();
+        }
+
+        function removeYearFromOpenClass() {
+            if (!syllabusRef) return;
+            const { schoolId, classId } = syllabusSel;
+            const cls = getSylClass(schoolId, classId);
+            if (!cls) return;
+            const year = syllabusYearFilter;
+            if (!classYears(cls).includes(year)) return;
+            const n = classItems(schoolId, classId, year).length;
+            if (!confirm(`蝣箏?蝘駁??{cls.name}??{year} 摮詨僑??Syllabus嚗?{n} ??嚗n?剔??祈澈?隞飛撟湔?靽?嚗迨???⊥?敺拙??)) return;
+            classYearRef(schoolId, classId, year).remove()
+                .then(() => {
+                    if (cls.years && cls.years[year]) delete cls.years[year];
+                    const rest = classYears(cls);
+                    if (!rest.includes(syllabusYearFilter)) syllabusYearFilter = rest[0] || DEFAULT_SCHOOL_YEAR;
+                    renderSyllabusYearFilter();
+                    renderSyllabusTree();
+                    renderSyllabusItems();
+                    showToast(`撌脩宏??${year} 摮詨僑`, 'success');
+                })
+                .catch(err => { console.error(err); showToast('蝘駁摮詨僑憭望?', 'error'); });
+        }
+
+        function renameSchool(schoolId, ev) {
+            if (ev) ev.stopPropagation();
+            const school = getSchool(schoolId);
+            if (!school) return;
+            const name = (prompt('靽格摮豢?迂', school.name || '') || '').trim();
+            if (!name || name === school.name) return;
+            const isYW = /^YW/i.test(name);
+            syllabusRef.child(schoolId).update({ name, layout: isYW ? 'double' : 'single' })
+                .then(() => {
+                    renderSyllabusTree();
+                    renderSyllabusItems();
+                    showToast('撌脫?啣飛?∪?蝔?, 'success');
+                })
+                .catch(err => { console.error(err); showToast('?湔憭望?', 'error'); });
+        }
+
+        function deleteSchool(schoolId, ev) {
+            if (ev) ev.stopPropagation();
+            const school = getSchool(schoolId);
+            if (!school) return;
+            const classCount = Object.keys(school.classes || {}).length;
+            if (!confirm(`蝣箏??芷摮豢??{school.name}??\n?? ${classCount} ?蝝? Syllabus ??雿萄?歹??⊥?敺拙??)) return;
+            syllabusRef.child(schoolId).remove()
+                .then(() => {
+                    if (syllabusSel.schoolId === schoolId) syllabusSel = { schoolId: null, classId: null };
+                    renderSyllabusTree();
+                    renderSyllabusItems();
+                    showToast('撌脣?文飛??, 'success');
+                })
+                .catch(err => { console.error(err); showToast('?芷憭望?', 'error'); });
+        }
+
+        function renameClass(schoolId, classId, ev) {
+            if (ev) ev.stopPropagation();
+            const cls = getSylClass(schoolId, classId);
+            if (!cls) return;
+            const name = prompt('靽格?剔??迂', cls.name || '');
+            if (name === null) return;
+            const newName = name.trim() || cls.name || '';
+            if (newName === cls.name) return;
+            syllabusRef.child(schoolId).child('classes').child(classId).update({ name: newName })
+                .then(() => {
+                    renderSyllabusTree();
+                    renderSyllabusItems();
+                    showToast('撌脫?啁蝝?蝔?, 'success');
+                })
+                .catch(err => { console.error(err); showToast('?湔憭望?', 'error'); });
+        }
+
+        function deleteClass(schoolId, classId, ev) {
+            if (ev) ev.stopPropagation();
+            const cls = getSylClass(schoolId, classId);
+            if (!cls) return;
+            const years = classYears(cls);
+            const n = years.reduce((sum, y) => sum + classItems(schoolId, classId, y).length, 0);
+            if (!confirm(`蝣箏??芷?剔???{cls.name}??\n?? ${years.length} ?飛撟氬 ${n} ??Syllabus ??雿萄?歹??⊥?敺拙??)) return;
+            syllabusRef.child(schoolId).child('classes').child(classId).remove()
+                .then(() => {
+                    if (syllabusSel.classId === classId) syllabusSel.classId = null;
+                    renderSyllabusTree();
+                    renderSyllabusItems();
+                    showToast('撌脣?斤蝝?, 'success');
+                })
+                .catch(err => { console.error(err); showToast('?芷憭望?', 'error'); });
+        }
+
+        function deleteSelectedClass() {
+            if (!syllabusSel.schoolId || !syllabusSel.classId) { showToast('隢??豢??剔?', 'error'); return; }
+            deleteClass(syllabusSel.schoolId, syllabusSel.classId);
+        }
+
+        function syllabusItemHtml(it, idx) {
+            return `
+                <div class="syl-item">
+                    <div class="syl-item-no">${idx + 1}</div>
+                    <div class="syl-item-body">
+                        <div class="syl-item-text">${esc(it.text)}</div>
+                        ${it.note ? `<div class="syl-item-note">${esc(it.note)}</div>` : ''}
+                    </div>
+                    <div class="syl-item-actions">
+                        <button type="button" onclick="moveSyllabusItem('${it.id}',-1)" title="銝宏">??/button>
+                        <button type="button" onclick="moveSyllabusItem('${it.id}',1)" title="銝宏">??/button>
+                        <button type="button" onclick="editSyllabusItem('${it.id}')" title="蝺刻摩">??/button>
+                        <button type="button" class="del" onclick="deleteSyllabusItem('${it.id}')" title="?芷">??</button>
+                    </div>
+                </div>`;
+        }
+
+        function renderClassYearBar(cls) {
+            const bar = document.getElementById('sylClassYearBar');
+            if (!bar) return;
+            if (!cls) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+            bar.style.display = 'flex';
+            const years = classYears(cls);
+            const cur = syllabusYearFilter;
+            const joined = years.includes(cur);
+            let html = '<span class="syl-year-label">?? 摮詨僑嚗?/span>';
+            if (years.length) {
+                html += years.map(y =>
+                    `<button type="button" class="syl-year-chip ${y === cur ? 'active' : ''}" onclick="switchClassYear('${y}')">${esc(y)}</button>`
+                ).join('');
+                if (!joined) {
+                    html += `<button type="button" class="syl-year-chip add" onclick="addYearToOpenClass()">嚗?? ${esc(cur)}</button>`;
+                }
+            } else {
+                html += `<span class="syl-year-none">甇斤蝝?隞颱?摮詨僑</span>`;
+            }
+            html += `<button type="button" class="syl-year-chip add" onclick="addYearToOpenClass()">嚗??嚗憓飛撟?/button>`;
+            if (joined) {
+                html += `<button type="button" class="syl-year-chip del" onclick="removeYearFromOpenClass()" title="蝘駁甇文飛撟渡? Syllabus">?? 蝘駁甇文飛撟?/button>`;
+            }
+            bar.innerHTML = html;
+        }
+
+        function renderSyllabusItems() {
+            const box = document.getElementById('syllabusItems');
+            const emptyEl = document.getElementById('syllabusEmpty');
+            const titleEl = document.getElementById('syllabusTitle');
+            const formEl = document.getElementById('syllabusForm');
+            const delBtn = document.getElementById('syllabusDeleteClassBtn');
+            const trackSel = document.getElementById('syllabusItemTrack');
+            if (!box || !titleEl) return;
+            const school = getSchool(syllabusSel.schoolId);
+            const cls = getSylClass(syllabusSel.schoolId, syllabusSel.classId);
+            if (delBtn) delBtn.style.display = cls ? 'inline-block' : 'none';
+            renderClassYearBar(cls);
+            if (!school || !cls) {
+                titleEl.textContent = school ? `${school.name} ??隢?蝝 : '隢??豢?摮豢?蝝?;
+                box.innerHTML = '';
+                if (formEl) formEl.style.display = 'none';
+                if (trackSel) trackSel.style.display = 'none';
+                if (emptyEl) { emptyEl.style.display = 'block'; emptyEl.textContent = '隢撌阡??豢?摮豢?蝝?; }
+                return;
+            }
+            const year = syllabusYearFilter;
+            const joined = classYears(cls).includes(year);
+            const isDouble = isDoubleLayoutSchool(school);
+            if (formEl) formEl.style.display = joined ? 'flex' : 'none';
+            if (trackSel) trackSel.style.display = (joined && isDouble) ? 'inline-block' : 'none';
+            titleEl.textContent = `? ${school.name} ???? ${cls.name}嚗?{year}嚗?{isDouble ? '?駁??? : ''}`;
+            if (!joined) {
+                box.innerHTML = '';
+                if (emptyEl) {
+                    emptyEl.style.display = 'block';
+                    emptyEl.innerHTML = `甇斤蝝? ${esc(year)} 摮詨僑??銝?? ? ${esc(year)}???? ?嚗憓飛撟氬?舫?憪楊頛胯;
+                }
+                return;
+            }
+            const q = (document.getElementById('syllabusSearch')?.value || '').trim().toLowerCase();
+            const all = classItems(school.id, cls.id, year);
+            const list = q ? all.filter(it =>
+                String(it.text || '').toLowerCase().includes(q) ||
+                String(it.note || '').toLowerCase().includes(q)) : all;
+            if (!list.length) {
+                box.innerHTML = '';
+                if (emptyEl) {
+                    emptyEl.style.display = 'block';
+                    emptyEl.textContent = q ? '瘝?蝚血??????? : `${year} 摮詨僑?芣? Syllabus ?嚗???鞎潔??臬????匝;
+                }
+                return;
+            }
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (isDouble) {
+                box.innerHTML = '<div class="syl-columns">' + [1, 2].map(t => {
+                    const colItems = list.filter(it => itemTrack(it) === t);
+                    return `<div class="syl-column">
+                        <div class="syl-column-head">
+                            <span>?? ${SYL_TRACK_LABELS[t]}</span>
+                            <span class="syl-count">${colItems.length} ??/span>
+                        </div>
+                        ${colItems.length
+                            ? colItems.map((it, idx) => syllabusItemHtml(it, idx)).join('')
+                            : '<div class="syl-empty">甇文??芣??</div>'}
+                    </div>`;
+                }).join('') + '</div>';
+            } else {
+                box.innerHTML = list.map((it, idx) => syllabusItemHtml(it, idx)).join('');
+            }
+        }
+
+        function saveSyllabusItem() {
+            if (!syllabusRef) { showToast('撠???嚗?蝔??岫', 'error'); return; }
+            if (!syllabusSel.schoolId || !syllabusSel.classId) { showToast('隢??豢??剔?', 'error'); return; }
+            const year = syllabusYearFilter;
+            const cls = getSylClass(syllabusSel.schoolId, syllabusSel.classId);
+            if (!cls || !classYears(cls).includes(year)) {
+                showToast(`甇斤蝝? ${year} 摮詨僑嚗????匝, 'error');
+                return;
+            }
+            const text = (document.getElementById('syllabusItemText').value || '').trim();
+            const note = (document.getElementById('syllabusItemNote').value || '').trim();
+            if (!text) { showToast('隢撓?仿??桀摰?, 'error'); return; }
+            const school = getSchool(syllabusSel.schoolId);
+            const isDouble = isDoubleLayoutSchool(school);
+            const trackEl = document.getElementById('syllabusItemTrack');
+            const track = isDouble ? (parseInt(trackEl && trackEl.value, 10) === 2 ? 2 : 1) : 1;
+            const itemsRef = classYearRef(syllabusSel.schoolId, syllabusSel.classId, year).child('items');
+            const done = (msg) => { showToast(msg, 'success'); cancelSyllabusEdit(); renderSyllabusItems(); };
+            const fail = (err) => { console.error(err); showToast('?脣?憭望?嚗?瑼Ｘ蝬脰楝', 'error'); };
+            if (syllabusEditingItemId) {
+                itemsRef.child(syllabusEditingItemId).update({ text, note, track }).then(() => done('撌脫??)).catch(fail);
+            } else {
+                const list = classItemsByTrack(syllabusSel.schoolId, syllabusSel.classId, track, year);
+                const order = list.length ? Math.max(...list.map(i => (typeof i.order === 'number' ? i.order : 0))) + 1 : 1;
+                const id = 'i' + Date.now();
+                itemsRef.child(id).set({ id, text, note, track, order, createdAt: Date.now() })
+                    .then(() => done('撌脫憓?)).catch(fail);
+            }
+        }
+
+        function editSyllabusItem(itemId) {
+            const year = syllabusYearFilter;
+            const item = classItems(syllabusSel.schoolId, syllabusSel.classId, year).find(i => i.id === itemId);
+            if (!item) return;
+            syllabusEditingItemId = itemId;
+            document.getElementById('syllabusItemText').value = item.text || '';
+            document.getElementById('syllabusItemNote').value = item.note || '';
+            const school = getSchool(syllabusSel.schoolId);
+            if (isDoubleLayoutSchool(school)) {
+                const trackEl = document.getElementById('syllabusItemTrack');
+                if (trackEl) trackEl.value = String(itemTrack(item));
+            }
+            document.getElementById('syllabusSaveBtn').textContent = '? 靽?';
+            document.getElementById('syllabusCancelBtn').style.display = 'inline-block';
+            document.getElementById('syllabusItemText').focus();
+        }
+
+        function cancelSyllabusEdit() {
+            syllabusEditingItemId = null;
+            const t = document.getElementById('syllabusItemText');
+            const n = document.getElementById('syllabusItemNote');
+            if (t) t.value = '';
+            if (n) n.value = '';
+            const saveBtn = document.getElementById('syllabusSaveBtn');
+            const cancelBtn = document.getElementById('syllabusCancelBtn');
+            if (saveBtn) saveBtn.textContent = '???啣?';
+            if (cancelBtn) cancelBtn.style.display = 'none';
+        }
+
+        function deleteSyllabusItem(itemId) {
+            if (!syllabusRef) { showToast('撠???嚗?蝔??岫', 'error'); return; }
+            if (!syllabusSel.schoolId || !syllabusSel.classId) return;
+            if (!confirm('蝣箏??芷甇?Syllabus ?嚗?)) return;
+            classYearRef(syllabusSel.schoolId, syllabusSel.classId, syllabusYearFilter)
+                .child('items').child(itemId).remove()
+                .then(() => showToast('撌脣??, 'success'))
+                .catch(err => { console.error(err); showToast('?芷憭望?', 'error'); });
+        }
+
+        function moveSyllabusItem(itemId, dir) {
+            if (!syllabusRef) return;
+            if (!syllabusSel.schoolId || !syllabusSel.classId) return;
+            const year = syllabusYearFilter;
+            const item = classItems(syllabusSel.schoolId, syllabusSel.classId, year).find(it => it.id === itemId);
+            if (!item) return;
+            const track = itemTrack(item);
+            const list = classItemsByTrack(syllabusSel.schoolId, syllabusSel.classId, track, year).slice();
+            const i = list.findIndex(it => it.id === itemId);
+            const j = i + dir;
+            if (i < 0 || j < 0 || j >= list.length) return;
+            const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+            const updates = {};
+            list.forEach((it, idx) => { updates[it.id] = { ...it, order: idx + 1 }; });
+            classYearRef(syllabusSel.schoolId, syllabusSel.classId, year)
+                .child('items').update(updates)
+                .then(() => renderSyllabusItems())
+                .catch(err => { console.error(err); showToast('??憭望?', 'error'); });
+        }
+
+        // ----- 鞎潔? / 瑼??臬 -----
+        function parsePastedText(raw) {
+            return String(raw || '')
+                .replace(/\u00a0/g, ' ')
+                .replace(/\r\n?/g, '\n')
+                .split('\n')
+                .map(line => line.split('\t').map(cell => cell.trim()))
+                .filter(cols => cols.some(cell => cell !== ''));
+        }
+
+        function pasteHeaderWords() {
+            return ['?批捆', '隤脤?', '?', '蝡?', '鈭?', '?飛?批捆', '蝭?',
+                '?酉', '隤芣?', '?酉', '摨?', '?望活', '?交?', '蝭??, '?', '銝玨?交?', 'note'].map(normHeader);
+        }
+
+        function pasteHasHeader() {
+            const first = pasteRows[0] || [];
+            const words = pasteHeaderWords();
+            return first.some(cell => words.includes(normHeader(cell)));
+        }
+
+        function widestColumn(rows, startRow) {
+            const totals = [];
+            for (let r = startRow; r < rows.length; r++) {
+                rows[r].forEach((cell, i) => { totals[i] = (totals[i] || 0) + String(cell).length; });
+            }
+            let best = 0;
+            totals.forEach((v, i) => { if (v > (totals[best] || 0)) best = i; });
+            return best;
+        }
+
+        function openSyllabusPaste(prefill) {
+            if (!syllabusSel.schoolId || !syllabusSel.classId) {
+                showToast('隢??典椰??飛?∪??剔?', 'error');
+                return;
+            }
+            const school = getSchool(syllabusSel.schoolId);
+            const cls = getSylClass(syllabusSel.schoolId, syllabusSel.classId);
+            if (!cls || !classYears(cls).includes(syllabusYearFilter)) {
+                showToast(`甇斤蝝? ${syllabusYearFilter} 摮詨僑`, 'error');
+                return;
+            }
+            pasteTarget = { schoolId: syllabusSel.schoolId, classId: syllabusSel.classId, year: syllabusYearFilter };
+            const isDouble = isDoubleLayoutSchool(school);
+            const trackRow = document.getElementById('pasteTrackRow');
+            if (trackRow) trackRow.style.display = isDouble ? 'block' : 'none';
+            const pasteTrackSel = document.getElementById('pasteTrack');
+            if (pasteTrackSel) {
+                const formTrack = document.getElementById('syllabusItemTrack');
+                pasteTrackSel.value = (isDouble && formTrack) ? formTrack.value : '1';
+            }
+            document.getElementById('pasteTargetLabel').textContent =
+                `?臬?格?嚗??${school ? school.name : ''} ???? ${cls ? cls.name : ''}嚗?{pasteTarget.year}嚗 +
+                `??暹? ${classItems(pasteTarget.schoolId, pasteTarget.classId, pasteTarget.year).length} ?;
+            const area = document.getElementById('syllabusPasteArea');
+            area.value = typeof prefill === 'string' ? prefill : '';
+            const appendRadio = document.querySelector('input[name="pasteMode"][value="append"]');
+            if (appendRadio) appendRadio.checked = true;
+            parsePasteArea();
+            document.getElementById('syllabusPasteModal').classList.add('active');
+            setTimeout(() => area.focus(), 60);
+        }
+
+        function closeSyllabusPaste() {
+            document.getElementById('syllabusPasteModal').classList.remove('active');
+            pasteRows = [];
+        }
+
+        function parsePasteArea() {
+            const raw = document.getElementById('syllabusPasteArea').value;
+            pasteRows = parsePastedText(raw);
+            const colCount = pasteRows.reduce((m, r) => Math.max(m, r.length), 0);
+            const cSel = document.getElementById('pasteContentCol');
+            const nSel = document.getElementById('pasteNoteCol');
+            if (!cSel || !nSel) return;
+            const hasHeader = pasteHasHeader();
+            const first = pasteRows[0] || [];
+
+            let contentIdx = -1;
+            let noteIdx = -1;
+            if (hasHeader) {
+                const hn = first.map(cell => normHeader(cell));
+                const find = (...names) => {
+                    for (const n of names) {
+                        const i = hn.indexOf(normHeader(n));
+                        if (i >= 0) return i;
+                    }
+                    return -1;
+                };
+                contentIdx = find('?批捆', '隤脤?', '?', '蝡?', '鈭?', '?飛?批捆', '蝭?');
+                noteIdx = find('?酉', '隤芣?', '?酉', 'note');
+            }
+            if (contentIdx < 0) contentIdx = widestColumn(pasteRows, hasHeader ? 1 : 0);
+            if (noteIdx < 0 && colCount > 1) noteIdx = (contentIdx === colCount - 1) ? colCount - 2 : colCount - 1;
+
+            cSel.innerHTML = '';
+            nSel.innerHTML = '<option value="-1">嚗嚗?/option>';
+            for (let i = 0; i < colCount; i++) {
+                const label = (hasHeader && first[i]) ? first[i] : `蝚?${i + 1} 甈;
+                cSel.add(new Option(label, i));
+                nSel.add(new Option(label, i));
+            }
+            if (colCount) {
+                cSel.value = String(contentIdx);
+                nSel.value = String(noteIdx >= 0 ? noteIdx : -1);
+            }
+            renderPastePreview();
+        }
+
+        function collectPasteItems() {
+            const cSel = document.getElementById('pasteContentCol');
+            const nSel = document.getElementById('pasteNoteCol');
+            if (!cSel || !nSel) return [];
+            const contentIdx = parseInt(cSel.value, 10);
+            const noteIdx = parseInt(nSel.value, 10);
+            if (isNaN(contentIdx) || contentIdx < 0) return [];
+            const hasHeader = pasteHasHeader();
+            const out = [];
+            pasteRows.forEach((row, i) => {
+                if (hasHeader && i === 0) return;
+                const text = (row[contentIdx] || '').trim();
+                if (!text) return;
+                out.push({ text, note: noteIdx >= 0 ? (row[noteIdx] || '').trim() : '' });
+            });
+            return out;
+        }
+
+        function renderPastePreview() {
+            const table = document.getElementById('pastePreview');
+            const summary = document.getElementById('pasteSummary');
+            if (!table) return;
+            const items = collectPasteItems();
+            if (!pasteRows.length) {
+                table.innerHTML = '<tbody><tr><td class="idx">??/td><td style="color:#999;padding:12px;">撠鞎潔?隞颱??批捆</td></tr></tbody>';
+                if (summary) summary.textContent = '';
+                return;
+            }
+            const max = 60;
+            table.innerHTML =
+                '<thead><tr><th class="idx">#</th><th>?批捆</th><th>?酉</th></tr></thead><tbody>' +
+                items.slice(0, max).map((it, i) =>
+                    `<tr><td class="idx">${i + 1}</td><td>${esc(it.text)}</td><td>${esc(it.note)}</td></tr>`
+                ).join('') +
+                '</tbody>';
+            if (summary) {
+                summary.textContent = items.length > max
+                    ? `?梯圾??${items.length} ???芷＊蝷箏? ${max} ??閬踝?`
+                    : `?梯圾??${items.length} ?;
+            }
+        }
+
+        function confirmSyllabusPaste() {
+            if (!syllabusRef || !pasteTarget.schoolId || !pasteTarget.classId) {
+                showToast('隢??豢??剔?', 'error');
+                return;
+            }
+            const items = collectPasteItems();
+            if (!items.length) { showToast('瘝??臬?亦??', 'error'); return; }
+            const modeEl = document.querySelector('input[name="pasteMode"]:checked');
+            const mode = modeEl ? modeEl.value : 'append';
+            const sid = pasteTarget.schoolId;
+            const cid = pasteTarget.classId;
+            const year = pasteTarget.year || syllabusYearFilter;
+            const school = getSchool(sid);
+            const isDouble = isDoubleLayoutSchool(school);
+            const trackEl = document.getElementById('pasteTrack');
+            const track = isDouble ? (parseInt(trackEl && trackEl.value, 10) === 2 ? 2 : 1) : 1;
+            const itemsRef = classYearRef(sid, cid, year).child('items');
+            const base = Date.now();
+            const payload = {};
+            let order = 0;
+            if (mode === 'append') {
+                const existing = classItemsByTrack(sid, cid, track, year);
+                order = existing.length ? Math.max(...existing.map(i => (typeof i.order === 'number' ? i.order : 0))) : 0;
+            } else {
+                const scope = isDouble ? `??{SYL_TRACK_LABELS[track]}? : '甇斤蝝?;
+                if (!confirm(`蝣箏?閬誑 ${items.length} ??隞?${year} ${scope}?暹??券???甇斗?雿瘜儔?)) return;
+            }
+            items.forEach((it, i) => {
+                order++;
+                const id = `i${base}_${i}`;
+                payload[id] = { id, text: it.text, note: it.note, track, order, createdAt: base + i };
+            });
+            const done = () => {
+                showToast(`撌脣??${items.length} ??${year}嚗?{isDouble ? '?? + SYL_TRACK_LABELS[track] : ''}`, 'success');
+                closeSyllabusPaste();
+                renderSyllabusItems();
+            };
+            const fail = (err) => {
+                console.error('Syllabus ?臬憭望?', err);
+                showToast('?臬憭望?嚗?瑼Ｘ蝬脰楝', 'error');
+            };
+            if (mode === 'replace') {
+                // ??璅∪?嚗?誨?格???靽??虫????桀?璅∪?嚗?剛府摮詨僑?誨
+                const keep = {};
+                if (isDouble) {
+                    classItems(sid, cid, year).forEach(it => {
+                        if (itemTrack(it) !== track) keep[it.id] = it;
+                    });
+                }
+                itemsRef.set({ ...keep, ...payload }).then(done).catch(fail);
+            } else {
+                itemsRef.update(payload).then(done).catch(fail);
+            }
+        }
+
+        async function exportSyllabusExcel() {
+            try {
+                const rows = [];
+                sortedSchools().forEach(s => {
+                    sortedClasses(s.id).forEach(c => {
+                        classYears(c).forEach(year => {
+                            const counters = { 1: 0, 2: 0 };
+                            classItems(s.id, c.id, year).forEach(it => {
+                                const t = itemTrack(it);
+                                counters[t]++;
+                                rows.push({
+                                    school: s.name, className: c.name, year,
+                                    track: `蝚?{t}?, order: counters[t], text: it.text || '', note: it.note || ''
+                                });
+                            });
+                        });
+                    });
+                });
+                if (!rows.length) { showToast('?怎 Syllabus ?臬??, 'error'); return; }
+                const wb = new ExcelJS.Workbook();
+                const ws = wb.addWorksheet('Syllabus');
+                ws.columns = [
+                    { header: '摮詨僑', key: 'year', width: 12 },
+                    { header: '摮豢', key: 'school', width: 22 },
+                    { header: '?剔?', key: 'className', width: 12 },
+                    { header: '??, key: 'track', width: 8 },
+                    { header: '摨?', key: 'order', width: 8 },
+                    { header: '?批捆', key: 'text', width: 46 },
+                    { header: '?酉', key: 'note', width: 26 }
+                ];
+                rows.forEach(r => ws.addRow(r));
+                ws.getRow(1).font = { bold: true };
+                const buf = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Syllabus_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast(`撌脣??${rows.length} ??Syllabus`, 'success');
+            } catch (err) {
+                console.error('?臬 Syllabus 憭望?', err);
+                showToast('?臬憭望?嚗??岫', 'error');
+            }
+        }
+
+        function handleSyllabusFile(input) {
+            const file = input.files[0];
+            input.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                importSyllabusWorkbook(e.target.result).catch(err => {
+                    console.error('?臬 Syllabus 瑼?憭望?', err);
+                    showToast('?臬憭望?嚗瘜???獢?, 'error');
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function importSyllabusWorkbook(data) {
+            const wb = new ExcelJS.Workbook();
+            await wb.xlsx.load(data);
+            const ws = wb.worksheets[0];
+            if (!ws) { showToast('瑼?瘝?撌乩?銵?, 'error'); return; }
+            const rows = [];
+            const last = ws.actualRowCount || ws.rowCount;
+            for (let r = 1; r <= last; r++) {
+                const row = ws.getRow(r);
+                const vals = [];
+                const cc = row.cellCount || 0;
+                for (let c = 1; c <= cc; c++) vals.push(importCellStr(row.getCell(c).value));
+                if (vals.some(v => v !== '')) rows.push(vals);
+            }
+            if (!rows.length) { showToast('瑼?瘝?鞈?', 'error'); return; }
+
+            const hn = rows[0].map(v => normHeader(v));
+            const idxOf = (...names) => {
+                for (const n of names) {
+                    const i = hn.indexOf(normHeader(n));
+                    if (i >= 0) return i;
+                }
+                return -1;
+            };
+            const sIdx = idxOf('摮豢', '摮豢?迂', 'school');
+            const cIdx = idxOf('?剔?', '?剖', 'class');
+            const tIdx = idxOf('?批捆', '隤脤?', '?', '蝡?', '鈭?', '?飛?批捆');
+            const nIdx = idxOf('?酉', '隤芣?', '?酉', 'note');
+            const yIdx = idxOf('摮詨僑', '撟游漲', 'schoolyear', 'year');
+            const xIdx = idxOf('??, '甈?, 'column', 'track');
+
+            if (sIdx >= 0 && cIdx >= 0 && tIdx >= 0) {
+                await importSyllabusGrouped(rows.slice(1), sIdx, cIdx, tIdx, nIdx, yIdx, xIdx);
+                return;
+            }
+            openSyllabusPaste(rows.map(r => r.join('\t')).join('\n'));
+            showToast('撌脰??交?獢摰對?隢Ⅱ隤?雿??臬', 'info');
+        }
+
+        function importTrackValue(v) {
+            const s = String(v === null || v === undefined ? '' : v).trim();
+            if (!s) return 1;
+            if (/2|鈭[Bb]/.test(s)) return 2;
+            return 1;
+        }
+
+        async function importSyllabusGrouped(rows, sIdx, cIdx, tIdx, nIdx, yIdx, xIdx) {
+            const fallbackYear = syllabusYearFilter || DEFAULT_SCHOOL_YEAR;
+            if (!confirm(`?菜葫?啜飛撟?/ 摮豢 / ?剔???嚗???獢摰孵?瘣曉??${rows.length} 銵n\n蝣箏?蝜潛?嚗)) return;
+            const base = Date.now();
+            const newSchoolNodes = {};
+            const newClassPaths = {};
+            const newItemPaths = {};
+            const yearsUsed = new Set();
+            const schoolLookup = {};
+            const classLookup = {};
+            let itemsAdded = 0;
+            let schoolsCreated = 0;
+            let classesCreated = 0;
+            let yearsAdded = 0;
+
+            Object.values(syllabus).forEach(s => {
+                schoolLookup[String(s.name || '').trim().toLowerCase()] = s;
+                Object.values(s.classes || {}).forEach(c => {
+                    const key = s.id + '|' + String(c.name || '').trim().toLowerCase();
+                    if (!classLookup[key]) classLookup[key] = [];
+                    classLookup[key].push(c);
+                });
+            });
+
+            rows.forEach(row => {
+                const sName = String(row[sIdx] || '').trim();
+                const cName = String(row[cIdx] || '').trim() || '?芸???;
+                const text = String(row[tIdx] || '').trim();
+                const year = (yIdx >= 0 ? normalizeYear(row[yIdx]) : '') || fallbackYear;
+                const track = xIdx >= 0 ? importTrackValue(row[xIdx]) : 1;
+                if (!sName || !text) return;
+                yearsUsed.add(year);
+
+                const sKey = sName.toLowerCase();
+                let school = schoolLookup[sKey];
+                if (!school) {
+                    const sid = `s${base}_${schoolsCreated}`;
+                    schoolsCreated++;
+                    school = { id: sid, name: sName, createdAt: base, classes: {} };
+                    schoolLookup[sKey] = school;
+                    newSchoolNodes[sid] = school;
+                }
+                const isNewSchool = !!newSchoolNodes[school.id];
+                const cKey = school.id + '|' + cName.toLowerCase();
+                const candidates = classLookup[cKey] || [];
+                // ????剔?銝剖歇?迨摮詨僑???血??典??蝝??飛撟湛??血??圈??剔?
+                let cls = candidates.find(c => c.years && c.years[year]);
+                if (!cls) cls = candidates[0];
+                const isNewClass = !cls;
+                if (!cls) {
+                    const cid = `c${base}_${classesCreated}`;
+                    classesCreated++;
+                    cls = { id: cid, name: cName, createdAt: base, years: { [year]: { createdAt: base, items: {} } } };
+                    if (!classLookup[cKey]) classLookup[cKey] = [];
+                    classLookup[cKey].push(cls);
+                    if (!school.classes) school.classes = {};
+                    school.classes[cid] = cls;
+                    if (!isNewSchool) newClassPaths[`syllabus/${school.id}/classes/${cid}`] = cls;
+                } else if (!cls.years || !cls.years[year]) {
+                    if (!cls.years) cls.years = {};
+                    cls.years[year] = { createdAt: base, items: {} };
+                    yearsAdded++;
+                    // 銝撖?years/{year} 蝭暺??踹?????item 頝臬?嚗???摮楝敺?銵?
+                }
+                const classIsNew = !!newClassPaths[`syllabus/${school.id}/classes/${cls.id}`] || isNewSchool;
+                const itemsPool = cls.years[year].items || (cls.years[year].items = {});
+                let order = Object.values(itemsPool).reduce((m, it) => {
+                    if (itemTrack(it) !== track) return m;
+                    const o = typeof it.order === 'number' ? it.order : 0;
+                    return Math.max(m, o);
+                }, 0);
+                order++;
+                const iid = `i${base}_${itemsAdded}`;
+                itemsAdded++;
+                const item = {
+                    id: iid, text,
+                    note: nIdx >= 0 ? String(row[nIdx] || '').trim() : '',
+                    track, order, createdAt: base + itemsAdded
+                };
+                itemsPool[iid] = item;
+                if (!isNewSchool && !classIsNew) {
+                    newItemPaths[`syllabus/${school.id}/classes/${cls.id}/years/${year}/items/${iid}`] = item;
+                }
+            });
+
+            const updates = {};
+            Object.values(newSchoolNodes).forEach(s => { updates[`syllabus/${s.id}`] = s; });
+            Object.entries(newClassPaths).forEach(([p, c]) => { updates[p] = c; });
+            Object.entries(newItemPaths).forEach(([p, it]) => { updates[p] = it; });
+            yearsUsed.forEach(y => {
+                if (!syllabusYears[y]) {
+                    updates[`syllabusYears/${y}`] = { createdAt: base };
+                    syllabusYears[y] = { createdAt: base };
+                }
+            });
+
+            if (!Object.keys(updates).length) { showToast('瘝??曉?臬?亦?鞈?', 'error'); return; }
+            try {
+                await database.ref().update(updates);
+                showToast(`撌脣??${itemsAdded} ???啣? ${schoolsCreated} ?飛?～?{classesCreated} ?蝝?{yearsAdded} ?飛撟湛?`, 'success');
+            } catch (err) {
+                console.error('Syllabus ?晷?臬憭望?', err);
+                showToast('?臬憭望?嚗?瑼Ｘ蝬脰楝', 'error');
+            }
+        }
+
+        // ----- ?亦? ??Syllabus ??? -----
+        function fillEventSyllabusSelectors(preselect) {
+            const sSel = document.getElementById('eventSyllabusSchool');
+            const cSel = document.getElementById('eventSyllabusClass');
+            const ySel = document.getElementById('eventSyllabusYear');
+            if (!sSel || !cSel) return;
+            sSel.innerHTML = '<option value="">??摮豢 ??/option>' +
+                sortedSchools().map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+            cSel.innerHTML = '<option value="">???剔? ??/option>';
+            if (ySel) ySel.innerHTML = '<option value="">??摮詨僑 ??/option>';
+            const target = preselect || (syllabusSel.schoolId
+                ? { schoolId: syllabusSel.schoolId, classId: syllabusSel.classId, year: syllabusYearFilter } : null);
+            if (target && target.schoolId && syllabus[target.schoolId]) {
+                sSel.value = target.schoolId;
+                onEventSyllabusSchoolChange();
+                if (target.classId && getSylClass(target.schoolId, target.classId)) {
+                    cSel.value = target.classId;
+                    onEventSyllabusClassChange();
+                }
+                if (target.year && ySel && classYears(getSylClass(target.schoolId, target.classId)).includes(target.year)) {
+                    ySel.value = target.year;
+                }
+            }
+            renderEventSyllabusOptions();
+        }
+
+        function onEventSyllabusSchoolChange() {
+            const sSel = document.getElementById('eventSyllabusSchool');
+            const cSel = document.getElementById('eventSyllabusClass');
+            if (!sSel || !cSel) return;
+            cSel.innerHTML = '<option value="">???剔? ??/option>' +
+                sortedClasses(sSel.value).map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+            onEventSyllabusClassChange();
+        }
+
+        function onEventSyllabusClassChange() {
+            const sSel = document.getElementById('eventSyllabusSchool');
+            const cSel = document.getElementById('eventSyllabusClass');
+            const ySel = document.getElementById('eventSyllabusYear');
+            if (!sSel || !cSel || !ySel) return;
+            const cls = getSylClass(sSel.value, cSel.value);
+            const years = classYears(cls);
+            const prev = ySel.value;
+            ySel.innerHTML = '<option value="">??摮詨僑 ??/option>' +
+                years.map(y => `<option value="${y}">${esc(y)}</option>`).join('');
+            const want = (prev && years.includes(prev))
+                ? prev
+                : (years.includes(syllabusYearFilter) ? syllabusYearFilter : (years[0] || ''));
+            ySel.value = want;
+            renderEventSyllabusOptions();
+        }
+
+        function renderEventSyllabusOptions() {
+            const box = document.getElementById('eventSyllabusOptions');
+            if (!box) return;
+            const sSel = document.getElementById('eventSyllabusSchool');
+            const cSel = document.getElementById('eventSyllabusClass');
+            const ySel = document.getElementById('eventSyllabusYear');
+            if (!sSel || !cSel) return;
+            const sid = sSel.value;
+            const cid = cSel.value;
+            const year = ySel ? ySel.value : '';
+            if (!sid || !cid) {
+                box.innerHTML = '<div class="syl-empty">?豢?摮豢?蝝?嚗?暸撠???Syllabus ?</div>';
+                renderEventSyllabusChips();
+                return;
+            }
+            if (!year) {
+                box.innerHTML = '<div class="syl-empty">甇斤蝝?隞颱?摮詨僑嚗?????Syllabus???亙飛撟?/div>';
+                renderEventSyllabusChips();
+                return;
+            }
+            const items = classItems(sid, cid, year);
+            if (!items.length) {
+                box.innerHTML = `<div class="syl-empty">${esc(year)} 摮詨僑?芣? Syllabus ?</div>`;
+                renderEventSyllabusChips();
+                return;
+            }
+            const makeCheckbox = (it) => {
+                const checked = eventSyllabusRefs.some(r => r.itemId === it.id && r.year === year);
+                return `<label class="syl-check ${checked ? 'checked' : ''}">
+                    <input type="checkbox" ${checked ? 'checked' : ''}
+                        onchange="toggleEventSyllabusItem('${sid}','${cid}','${year}','${it.id}',this.checked)">
+                    <span>${esc(it.text)}</span>
+                    ${it.note ? `<em>${esc(it.note)}</em>` : ''}
+                </label>`;
+            };
+            if (isDoubleLayoutSchool(getSchool(sid))) {
+                box.innerHTML = [1, 2].map(t => {
+                    const list = items.filter(it => itemTrack(it) === t);
+                    const head = `<div class="syl-track-head">?? ${SYL_TRACK_LABELS[t]}</div>`;
+                    return head + (list.length
+                        ? list.map(makeCheckbox).join('')
+                        : '<div class="syl-empty">甇文??芣??</div>');
+                }).join('');
+            } else {
+                box.innerHTML = items.map(makeCheckbox).join('');
+            }
+            renderEventSyllabusChips();
+        }
+
+        function toggleEventSyllabusItem(sid, cid, year, itemId, checked) {
+            const item = classItems(sid, cid, year).find(i => i.id === itemId);
+            if (!item) return;
+            if (checked) {
+                if (!eventSyllabusRefs.some(r => r.itemId === itemId && r.year === year)) {
+                    const school = getSchool(sid);
+                    const cls = getSylClass(sid, cid);
+                    const double = isDoubleLayoutSchool(school);
+                    eventSyllabusRefs.push({
+                        schoolId: sid,
+                        classId: cid,
+                        itemId,
+                        schoolName: school ? school.name : '',
+                        className: cls ? cls.name : '',
+                        year,
+                        track: double ? itemTrack(item) : 0,
+                        text: item.text || ''
+                    });
+                }
+            } else {
+                eventSyllabusRefs = eventSyllabusRefs.filter(r => !(r.itemId === itemId && r.year === year));
+            }
+            renderEventSyllabusOptions();
+        }
+
+        function renderEventSyllabusChips() {
+            const box = document.getElementById('eventSyllabusChips');
+            if (!box) return;
+            if (!eventSyllabusRefs.length) { box.innerHTML = ''; return; }
+            box.innerHTML = eventSyllabusRefs.map((r, i) => `
+                <span class="syl-chip">?? ${esc(r.schoolName || '')} ${esc(r.className || '')}${r.year ? `嚗?{esc(r.year)}嚗 : ''}${r.track ? `??{SYL_TRACK_LABELS[r.track] || ''}` : ''} 繚 ${esc(r.text || '')}
+                    <button type="button" onclick="removeEventSyllabusRef(${i})" title="蝘駁">??/button>
+                </span>`).join('');
+        }
+
+        function removeEventSyllabusRef(i) {
+            eventSyllabusRefs.splice(i, 1);
+            renderEventSyllabusOptions();
         }
 
         function showToast(message, type) {
