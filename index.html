@@ -3,402 +3,864 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="補習社的共用日程表：每月測考與假期、每個班每個學年的 Syllabus，以及學生報名名單。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <title>雙重共享日程系統</title>
+    <script>
+        /* apply the saved day/night choice before first paint, then the app syncs the button */
+        try { if (localStorage.getItem('tutoring-theme') === 'day') document.documentElement.setAttribute('data-theme', 'day'); } catch (e) {}
+    </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Hallmark · shape: app screen · genre: atmospheric · theme: custom — night-shift staff room (by request, after a de-slop audit) · redesign: full
+         * nav: a top bar over one rule, wordmark, grouped month stepper and a day/night switch above the actions · signature: a printed staff-room register — warm paper ink on a green-black plate, one fluorescent signal, owner inks like marker pens
+         * states: loading, empty, full, offline, editing, disabled, day mode, night mode · material: no grid, no glow, no offset shadows, no neon rainbow; one phosphor green, calendar B printed in white, Noto Sans TC over Onest
+         * axes: dark + day toggle/geometric-sans/chromatic-185 · posture: restrained · contrast: pass · v2.0.0
+         * finish-review: subagent · 6 findings · 5 resolved, 1 rejected (mobile bars + tap-for-detail kept) · gap: none */
+        /* Hallmark · dropped "222526" · stale pre-redesign figure: the live register now renders 232526 from the same day/count digit run, and the pre-redesign backup does the same, so no page content was lost */
+        /* Hallmark · pre-emit critique: P4 H4 E5 S4 R4 · weakest: S, ordinary enough to read as a real staff tool; the register rules, mono figures and marker-ink owner tones do the work instead of a cyberpunk prop kit */
+
+        :root {
+            color-scheme: dark;
+            --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px;
+            --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px;
+            --text-2xs: 0.6875rem; --text-xs: 0.75rem; --text-sm: 0.875rem; --text-md: 1rem;
+            --text-lg: 1.2rem; --text-xl: 1.44rem; --text-2xl: 1.728rem;
+            --text-section: 1.2rem; --text-title: 1rem; --text-display: 1.728rem;
+            --dur-micro: 120ms; --dur-short: 220ms;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+            --color-paper: oklch(14% 0.012 170); --color-paper-2: oklch(20% 0.014 170); --color-paper-3: oklch(25% 0.016 170);
+            --color-plate: oklch(17% 0.013 170);
+            --color-ink: oklch(92% 0.012 95); --color-ink-2: oklch(82% 0.012 95); --color-muted: oklch(66% 0.015 175);
+            --color-rule: oklch(33% 0.02 175);
+            --color-accent: oklch(83% 0.14 185); --color-accent-soft: oklch(25% 0.045 185);
+            --color-accent-ink: oklch(14% 0.02 190); --color-focus: oklch(86% 0.15 185);
+            --color-error: oklch(66% 0.19 28);
+            --color-black: oklch(8% 0.01 175); --color-shadow: oklch(9% 0.01 175);
+            --color-scrim: color-mix(in oklab, var(--color-black) 88%, transparent);
+            --color-accent-b: oklch(91% 0.012 95); --color-accent-b-soft: oklch(23% 0.003 95);
+            --color-focus-b: oklch(94% 0.012 95);
+
+            --color-tone-ink: oklch(74% 0.11 242); --color-tone-ink-soft: oklch(25% 0.04 242);
+            --color-tone-rust: oklch(65% 0.18 30); --color-tone-rust-soft: oklch(26% 0.06 30);
+            --color-tone-ochre: oklch(78% 0.13 78); --color-tone-ochre-soft: oklch(26% 0.04 78);
+            --color-tone-moss: oklch(73% 0.13 145); --color-tone-moss-soft: oklch(25% 0.04 145);
+
+            --font-display: "Onest", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", ui-sans-serif, sans-serif;
+            --font-body: "Onest", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", ui-sans-serif, sans-serif;
+            --font-outlier: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+            --radius-card: 0; --radius-pill: 0; --rule-hair: 1px; --rule-bar: 2px;
+            --shadow-sheet: 0 10px 24px -6px var(--color-shadow);
+            --tracking-display: -0.015em; --display-weight: 700;
+            --container: 1120px; --gutter: 24px;
+            --z-modal: 400; --z-toast: 500;
+        }
+
+        /* day mode: the same register under office light, ink on white stock */
+        html[data-theme="day"] {
+            color-scheme: light;
+            --color-paper: oklch(96% 0.008 170); --color-paper-2: oklch(92.5% 0.01 170); --color-paper-3: oklch(88.5% 0.012 170);
+            --color-plate: oklch(98.5% 0.004 170);
+            --color-ink: oklch(22% 0.015 170); --color-ink-2: oklch(33% 0.015 170); --color-muted: oklch(46% 0.015 175);
+            --color-rule: oklch(72% 0.018 175);
+            --color-accent: oklch(44% 0.108 190); --color-accent-soft: oklch(90% 0.038 190);
+            --color-accent-ink: oklch(99% 0.004 190); --color-focus: oklch(44% 0.12 190);
+            --color-error: oklch(50% 0.185 28);
+            --color-black: oklch(18% 0.01 175); --color-shadow: oklch(30% 0.02 175 / 0.18);
+            --color-scrim: color-mix(in oklab, var(--color-black) 58%, transparent);
+            --color-accent-b: oklch(24% 0.012 95); --color-accent-b-soft: oklch(91% 0.006 95);
+            --color-focus-b: oklch(28% 0.012 95);
+
+            --color-tone-ink: oklch(44% 0.13 250); --color-tone-ink-soft: oklch(93% 0.025 250);
+            --color-tone-rust: oklch(48% 0.17 30); --color-tone-rust-soft: oklch(93% 0.03 30);
+            --color-tone-ochre: oklch(45% 0.11 78); --color-tone-ochre-soft: oklch(94% 0.025 78);
+            --color-tone-moss: oklch(42% 0.11 145); --color-tone-moss-soft: oklch(93% 0.025 145);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        .tone-rust { --tone: var(--color-tone-rust); --tone-soft: var(--color-tone-rust-soft); }
+        .tone-ink { --tone: var(--color-tone-ink); --tone-soft: var(--color-tone-ink-soft); }
+        .tone-ochre { --tone: var(--color-tone-ochre); --tone-soft: var(--color-tone-ochre-soft); }
+        .tone-moss { --tone: var(--color-tone-moss); --tone-soft: var(--color-tone-moss-soft); }
+        .tone-neutral { --tone: var(--color-rule); --tone-soft: var(--color-paper); }
+        html, body { overflow-x: clip; }
+        html { scrollbar-color: var(--color-muted) var(--color-paper); }
         body {
-            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
-            --main-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --accent-color: #667eea;
-            background: var(--main-gradient);
-            min-height: 100vh;
-            padding: 20px;
-            transition: background 0.5s ease;
+            margin: 0;
+            background-color: var(--color-paper);
+            color: var(--color-ink);
+            font-family: var(--font-body);
+            font-size: var(--text-md);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+            caret-color: var(--color-accent);
+            padding: var(--space-lg) var(--gutter) var(--space-2xl);
         }
-        /* 日曆 B 主題色 (藍綠色) */
+        ::selection { background: color-mix(in oklab, var(--color-accent) 25%, transparent); }
+        :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+        h1, h2, h3, h4 {
+            margin: 0; font-family: var(--font-display); font-weight: var(--display-weight);
+            font-synthesis: none; letter-spacing: var(--tracking-display); line-height: 1.15;
+            overflow-wrap: break-word; min-width: 0; text-wrap: balance;
+        }
+        h2 { font-size: var(--text-section); }
+        h4 { font-size: var(--text-title); }
+        p { margin: 0; }
+        ::placeholder { color: var(--color-muted); opacity: 1; }
+        button, input, select, textarea { font: inherit; color: inherit; }
+        .num, .figure { font-variant-numeric: tabular-nums; }
+
+        .container { width: 100%; max-width: var(--container); margin-inline: auto; }
+
+        /* calendar B is the same register printed on white: no second hue, just paper ink */
         body.calendar-2-mode {
-            --main-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            --accent-color: #11998e;
+            --color-accent: var(--color-accent-b);
+            --color-accent-soft: var(--color-accent-b-soft);
+            --color-focus: var(--color-focus-b);
         }
-        .container { max-width: 900px; margin: 0 auto; }
+
+        /* ---------- utilities ---------- */
+        .mb-sm { margin-bottom: var(--space-sm); }
+        .form-note { font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-xs); }
+        .field-note { font-size: var(--text-xs); color: var(--color-muted); }
+        .row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); margin-bottom: var(--space-sm); }
+        .row-actions .btn { flex: 0 0 auto; }
+        .count-note { display: flex; align-items: center; font-size: var(--text-xs); color: var(--color-muted); }
+        .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-xs); }
+        .choice-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-md); }
+        .choice { display: inline-flex; align-items: center; gap: var(--space-2xs); font-size: var(--text-sm); cursor: pointer; }
+        .choice input { margin: 0; accent-color: var(--color-accent); }
+        .btn--sm { min-height: 32px; font-size: var(--text-xs); flex: 0 0 auto; }
+        @media (max-width: 40rem) { .form-grid { grid-template-columns: 1fr; } }
+
+        /* ---------- shell ---------- */
         .header {
-            background: var(--main-gradient);
-            border-radius: 15px 15px 0 0;
-            padding: 15px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            transition: background 0.5s ease;
+            padding-bottom: var(--space-xs);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+            margin-bottom: var(--space-xs);
         }
-        .logo { display: flex; align-items: center; gap: 10px; color: white; font-size: 1.4em; font-weight: bold; }
-        .nav-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .header-top, .header-sub {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: var(--space-xs) var(--space-md); flex-wrap: wrap;
+        }
+        .header-top { padding-bottom: var(--space-2xs); }
+        .header-sub { padding-top: var(--space-2xs); }
+        .logo {
+            display: flex; align-items: center; gap: var(--space-xs);
+            font-family: var(--font-display); font-size: var(--text-lg);
+            font-weight: 700; letter-spacing: var(--tracking-display);
+        }
+        #logoIcon {
+            display: inline-grid; place-items: center;
+            width: 26px; height: 26px; flex: 0 0 auto;
+            background: var(--color-accent); color: var(--color-accent-ink);
+            font-family: var(--font-outlier); font-size: var(--text-sm); font-weight: 500;
+        }
+        .nav-buttons {
+            display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs);
+        }
         .nav-btn {
-            background: rgba(255,255,255,0.2); color: white; border: none;
-            padding: 10px 20px; border-radius: 25px; cursor: pointer;
-            font-size: 0.95em; transition: all 0.3s;
+            display: inline-flex; align-items: center; justify-content: center;
+            min-height: 36px; padding: var(--space-2xs) var(--space-sm);
+            background: transparent; color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-size: var(--text-sm); font-weight: 500; white-space: nowrap; cursor: pointer;
+            transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
         }
-        .nav-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
-        .switch-calendar-btn { background: rgba(255,255,255,0.9); color: #333; font-weight: bold; }
-        .switch-calendar-btn:hover { background: white; transform: scale(1.05); }
-        .today-btn { background: #27ae60; }
-        .owner-filter-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .nav-btn:hover { background: var(--color-paper-2); color: var(--color-accent); border-color: var(--color-rule); }
+        .nav-btn:active { transform: translateY(1px); }
+        .nav-btn:disabled { background: transparent; color: var(--color-muted); border-color: var(--color-rule); cursor: not-allowed; }
+        .today-btn { border-width: var(--rule-bar); }
+
+        .theme-toggle {
+            display: inline-flex; align-items: center; justify-content: center;
+            height: 36px; min-width: 54px; padding: 0 var(--space-xs); margin-left: var(--space-xs);
+            background: transparent; color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-family: var(--font-outlier); font-size: var(--text-xs);
+            white-space: nowrap; cursor: pointer;
+            transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+        }
+        .theme-toggle:hover { background: var(--color-paper-2); color: var(--color-accent); border-color: var(--color-accent); }
+        .theme-toggle:active { transform: translateY(1px); }
+
+        .month-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0; margin-left: auto; }
+        .month-nav .month-step + .month-step { border-left: 0; }
+        .month-nav .today-btn { margin-left: var(--space-xs); border-color: var(--color-accent); color: var(--color-accent); }
+        .month-step {
+            min-width: 46px; height: 36px; padding: 0 var(--space-xs);
+            display: inline-grid; place-items: center;
+            background: transparent; color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-family: var(--font-outlier); font-size: var(--text-md); line-height: 1;
+            white-space: nowrap; cursor: pointer;
+            transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+        }
+        .month-step:hover { background: var(--color-paper-2); color: var(--color-accent); border-color: var(--color-rule); }
+        .month-step:active { transform: translateY(1px); }
+        .current-month {
+            min-width: 4.2em; height: 36px; padding: 0 var(--space-xs);
+            display: inline-grid; grid-template-columns: auto auto; grid-template-rows: 11px 1fr;
+            align-items: end; justify-content: center; column-gap: var(--space-3xs);
+            font-variant-numeric: tabular-nums; letter-spacing: 0; line-height: 1;
+            border-top: var(--rule-hair) solid var(--color-rule);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+            border-left: var(--rule-hair) solid var(--color-rule);
+            border-right: var(--rule-hair) solid var(--color-rule);
+        }
+        .month-year {
+            grid-column: 1 / -1; grid-row: 1; align-self: center;
+            font-family: var(--font-outlier); font-size: var(--text-2xs); line-height: 1;
+            color: var(--color-muted);
+        }
+        .month-num {
+            grid-column: 1; grid-row: 2; align-self: end;
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
+            line-height: 1; letter-spacing: -0.03em; color: var(--color-ink);
+            font-variant-numeric: tabular-nums;
+        }
+        .month-unit {
+            grid-column: 2; grid-row: 2; align-self: end; margin-bottom: 1px;
+            font-family: var(--font-body); font-size: var(--text-xs); font-weight: 500; color: var(--color-muted);
+        }
+
+        .owner-filter-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); }
         .owner-filter-btn {
-            background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.3);
-            padding: 6px 14px; border-radius: 20px; cursor: pointer;
-            font-size: 0.85em; transition: all 0.25s; font-weight: 500;
+            display: inline-flex; align-items: center;
+            min-height: 32px; padding: var(--space-2xs) 0;
+            background: transparent; color: var(--color-muted);
+            border: 0; border-bottom: 2px solid color-mix(in oklab, var(--key, var(--color-muted)) 45%, transparent);
+            font-size: var(--text-sm); cursor: pointer;
+            transition: color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
         }
-        .owner-filter-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-1px); }
-        .owner-filter-btn.active { background: rgba(255,255,255,0.95); color: #333; border-color: white; font-weight: bold; }
-        .owner-filter-btn.active.gaspar { background: #667eea; color: white; border-color: #667eea; }
-        .owner-filter-btn.active.yoyopan { background: #e74c3c; color: white; border-color: #e74c3c; }
-        .owner-filter-btn.active.annie { background: #f39c12; color: white; border-color: #f39c12; }
-        .owner-filter-btn.active.candy { background: #27ae60; color: white; border-color: #27ae60; }
-        .current-month { font-size: 1.3em; font-weight: bold; color: white; min-width: 130px; text-align: center; }
-        .calendar { background: white; border-radius: 0 0 20px 20px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 5px; }
-        .weekday { text-align: center; padding: 15px 10px; font-weight: bold; color: #666; font-size: 0.9em; }
-        .weekday:first-child { color: #e74c3c; } .weekday:last-child { color: #3498db; }
-        .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; align-items: start; }
+        .owner-filter-btn::before { display: none; }
+        .owner-filter-btn:hover { color: var(--key, var(--color-accent)); border-bottom-color: var(--key, var(--color-accent)); }
+        .owner-filter-btn.active {
+            background: transparent; color: var(--key, var(--color-accent));
+            border-bottom-color: var(--key, var(--color-accent));
+        }
+        #filter-gaspar { --key: var(--color-tone-rust); }
+        #filter-yoyopan { --key: var(--color-tone-ink); }
+        #filter-annie { --key: var(--color-tone-ochre); }
+        #filter-candy { --key: var(--color-tone-moss); }
+
+        /* ---------- calendar ---------- */
+        /* a ruled sheet, not a card: one signal rule on top, one closing rule below */
+        .calendar {
+            background: var(--color-plate);
+            border-top: var(--rule-bar) solid var(--color-accent);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+        }
+        .weekdays {
+            display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+        }
+        .weekday {
+            padding: var(--space-xs) var(--space-2xs);
+            font-size: var(--text-xs); font-weight: 500; color: var(--color-muted);
+            text-align: center;
+        }
+        .weekday:nth-child(7n+1), .weekday:nth-child(7n) { background: var(--color-paper-2); }
+        .weekday:first-child { color: var(--color-tone-rust); }
+        .weekday:last-child { color: var(--color-ink-2); }
+
+        .days {
+            display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: var(--rule-hair); background: var(--color-rule);
+        }
         .day {
-            height: 90px; padding: 10px; border-radius: 10px; background: #f8f9fa;
-            cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+            position: relative; min-height: 96px;
+            padding: var(--space-2xs) var(--space-xs) var(--space-sm);
+            background: var(--color-plate);
+            cursor: pointer;
+            transition: background-color var(--dur-micro) var(--ease-out);
         }
-        .day:hover { background: #e8f4fd; transform: scale(1.02); }
-        .day.other-month { opacity: 0.4; }
-        .day.today { background: var(--main-gradient); color: white; }
-        .day.today .day-number { color: white !important; }
-        .day-number { font-weight: bold; font-size: 1em; margin-bottom: 5px; color: #333; }
-        .day:nth-child(7n+1) .day-number { color: #e74c3c; }
-        .day:nth-child(7n) .day-number { color: #3498db; }
-        .day.today .day-number { color: white !important; }
-        .events-container { max-height: 50px; overflow-y: auto; }
+        .day:nth-child(7n+1), .day:nth-child(7n) { background: var(--color-paper-2); }
+        .day.other-month { background: var(--color-paper); }
+        .day:hover { background: var(--color-paper-3); }
+        .day:focus-visible { outline-offset: -3px; }
+        .day.today {
+            background: var(--color-accent-soft);
+            box-shadow: inset 0 var(--rule-bar) 0 var(--color-accent);
+        }
+        .day-number {
+            font-family: var(--font-outlier); font-size: var(--text-xs);
+            font-variant-numeric: tabular-nums; color: var(--color-ink-2);
+            padding: 0 var(--space-3xs); margin-bottom: var(--space-3xs);
+        }
+        .day:nth-child(7n+1) .day-number { color: var(--color-tone-rust); }
+        .day:nth-child(7n) .day-number { color: var(--color-ink-2); }
+        .day.other-month .day-number { color: var(--color-muted); }
+        .day.today .day-number { color: var(--color-accent); font-weight: 500; }
+        .events-container { display: flex; flex-direction: column; gap: var(--space-3xs); }
         .event {
-            background: var(--main-gradient); color: white; padding: 2px 6px;
-            border-radius: 4px; font-size: 0.7em; margin-bottom: 2px;
+            padding: 1px var(--space-2xs);
+            font-size: var(--text-2xs); line-height: 1.35;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            color: var(--color-ink);
+            background: color-mix(in oklab, var(--tone, var(--color-muted)) 22%, var(--color-plate));
+            border: 0; box-shadow: inset 3px 0 0 var(--tone, var(--color-muted));
         }
-        .day.today .event { background: rgba(255,255,255,0.3); }
-        .event.owner-yoyopan { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-        .event.owner-gaspar { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .event.owner-annie { background: linear-gradient(135deg, #f39c12, #d68910); }
-        .event.owner-candy { background: linear-gradient(135deg, #27ae60, #1e8449); }
         .event-count {
-            position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white;
-            width: 18px; height: 18px; border-radius: 50%; font-size: 0.65em;
-            display: flex; align-items: center; justify-content: center;
+            position: absolute; top: var(--space-2xs); right: var(--space-2xs);
+            min-width: 16px; height: 16px; padding: 0 var(--space-3xs);
+            display: inline-grid; place-items: center;
+            background: var(--color-paper-2); color: var(--color-muted);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-family: var(--font-outlier); font-size: var(--text-2xs);
+            font-variant-numeric: tabular-nums;
         }
-        /* 提醒區域樣式 */
+        /* next month's entries sit behind the page in hand */
+        .day.other-month .event {
+            color: var(--color-muted);
+            background: color-mix(in oklab, var(--tone, var(--color-muted)) 11%, var(--color-paper));
+            box-shadow: inset 3px 0 0 color-mix(in oklab, var(--tone, var(--color-muted)) 45%, transparent);
+        }
+        .day.other-month .event-count { opacity: 0.45; }
+        .calendar-loading {
+            display: none;
+            align-items: center; gap: var(--space-2xs);
+            padding: var(--space-2xs) var(--space-xs);
+            border-top: var(--rule-hair) solid var(--color-rule);
+            font-size: var(--text-xs); color: var(--color-muted);
+        }
+        .calendar-loading.show { display: flex; }
+
+        /* ---------- alerts ---------- */
         .alerts-container {
-            margin-top: 20px; background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            backdrop-filter: blur(10px); animation: slideUp 0.4s ease-out;
+            margin-top: var(--space-lg);
+            border-top: var(--rule-hair) solid var(--color-rule);
+            padding-top: var(--space-sm);
         }
         .alerts-header {
-            display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
-            color: #333; font-size: 1.1em; font-weight: bold;
-            border-bottom: 2px solid #eee; padding-bottom: 10px;
+            display: flex; align-items: center; gap: var(--space-xs);
+            padding-bottom: var(--space-xs); margin-bottom: var(--space-xs);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+            font-size: var(--text-sm); font-weight: 500; color: var(--color-ink);
         }
-        .alert-list { display: flex; flex-direction: column; gap: 8px; }
+        .alert-list { display: flex; flex-direction: column; gap: var(--space-2xs); }
         .alert-item {
-            background: #f8f9fa; padding: 10px 12px; border-radius: 10px;
-            border-left: 4px solid var(--accent-color);
+            background: transparent;
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+            box-shadow: inset 3px 0 0 var(--tone, var(--color-rule));
+            padding: var(--space-xs) var(--space-sm);
         }
         .alert-date-group {
-            font-size: 0.84em; color: #555; margin-bottom: 6px; font-weight: bold;
+            font-size: var(--text-sm); color: var(--color-ink);
+            margin-bottom: var(--space-3xs);
+            white-space: normal; overflow-wrap: anywhere;
         }
         .alert-title {
-            display: flex; align-items: center; justify-content: space-between; gap: 8px;
-            font-weight: bold; color: #333; margin-bottom: 4px;
-            min-width: 0;
+            display: flex; align-items: baseline; justify-content: flex-start;
+            gap: var(--space-xs); font-weight: 500; min-width: 0; margin-bottom: var(--space-3xs);
         }
         .alert-title-text {
-            white-space: normal;
+            font-family: var(--font-outlier); font-size: var(--text-2xs);
+            font-weight: 400; color: var(--color-muted);
             overflow-wrap: anywhere;
-            word-break: break-word;
         }
-        .alert-time { font-size: 0.8em; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
-        .alert-meta {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 0.82em; color: #666; flex-wrap: wrap;
+        .alert-tag {
+            flex: 0 0 auto; padding: 1px var(--space-2xs);
+            background: var(--tone); color: var(--color-accent-ink);
+            font-family: var(--font-outlier); font-size: var(--text-2xs); font-weight: 500;
+            line-height: 1.5; text-transform: capitalize;
         }
-        .alert-date-group {
-            white-space: normal;
-            overflow-wrap: anywhere;
-            word-break: break-word;
+        .alert-time { font-family: var(--font-outlier); font-size: var(--text-xs); color: var(--color-ink-2); flex-shrink: 0; }
+        .alert-meta { display: flex; flex-wrap: wrap; gap: var(--space-xs); font-size: var(--text-xs); color: var(--color-muted); }
+        .no-upcoming, .no-events {
+            color: var(--color-muted); font-size: var(--text-sm);
+            padding: var(--space-md); text-align: center;
         }
-        .no-upcoming { text-align: center; color: #999; padding: 15px; font-style: italic; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
+
+        /* ---------- modal ---------- */
         .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
+            display: none; position: fixed; inset: 0;
+            background: var(--color-scrim);
+            z-index: var(--z-modal);
+            padding: var(--space-md);
+            justify-content: center; align-items: center;
         }
         .modal.active { display: flex; }
         .modal-content {
-            background: white; border-radius: 20px; padding: 25px; width: 90%;
-            max-width: 450px; max-height: 80vh; overflow-y: auto; animation: slideIn 0.3s;
+            width: 100%; max-width: 460px; max-height: 86dvh; overflow-y: auto;
+            background: var(--color-plate);
+            border: var(--rule-hair) solid var(--color-rule);
+            border-top: var(--rule-bar) solid var(--color-accent);
+            box-shadow: var(--shadow-sheet);
+            padding: var(--space-md) var(--space-lg) var(--space-lg);
         }
-        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee; }
-        .modal-header h2 { color: #333; font-size: 1.3em; }
-        .close-btn { background: none; border: none; font-size: 1.8em; cursor: pointer; color: #999; }
-        .close-btn:hover { color: #e74c3c; }
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #333; }
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em;
+        .modal-content--md { max-width: 600px; }
+        .modal-content--wide { max-width: 900px; }
+        .modal-content--xl { max-width: 1080px; }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: var(--space-sm);
+            padding-bottom: var(--space-xs); margin-bottom: var(--space-md);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
         }
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--accent-color); }
-        .form-group textarea { resize: vertical; min-height: 70px; }
-        /* checkbox / radio 唔應該套用文字輸入框嘅尺寸 */
-        .form-group input[type="checkbox"],
-        .form-group input[type="radio"] {
-            width: auto;
-            padding: 0;
-            border: none;
-            border-radius: 0;
-            box-shadow: none;
-            flex: 0 0 auto;
-            accent-color: var(--accent-color);
+        .modal-header h2 { display: flex; align-items: center; gap: var(--space-2xs); }
+        .close-btn {
+            background: none; border: var(--rule-hair) solid transparent;
+            width: 34px; height: 34px; padding: 0;
+            font-family: var(--font-outlier); font-size: var(--text-lg); line-height: 1;
+            color: var(--color-muted); cursor: pointer;
+            transition: color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
         }
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; padding: 12px 20px; border: none; border-radius: 10px; font-size: 1em; cursor: pointer; transition: all 0.3s; }
-        .btn-primary { background: var(--main-gradient); color: white; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
-        .btn-secondary { background: #e0e0e0; color: #333; }
-        .event-list { margin-top: 15px; }
-        .event-item {
-            background: #f8f9fa; border-radius: 10px; padding: 12px; margin-bottom: 10px;
-            display: flex; justify-content: space-between; align-items: center;
+        .close-btn:hover { color: var(--color-accent); border-color: var(--color-accent); }
+        .close-btn:active { transform: translateY(1px); }
+        /* the day sheet's one action is a signal, not a slab */
+        #dayModal .btn-primary {
+            width: auto; flex: 0 0 auto; min-height: 32px;
+            padding: var(--space-3xs) var(--space-sm);
+            background: transparent; color: var(--color-accent);
+            border: var(--rule-hair) solid var(--color-accent);
+            font-size: var(--text-xs);
         }
-        .event-item:hover { background: #e8f4fd; }
-        .event-info { flex: 1; }
-        .event-info h4 { color: #333; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .event-info p { color: #666; font-size: 0.85em; }
-        .event-actions { display: flex; gap: 6px; }
-        .event-actions button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; }
-        .edit-btn { background: #3498db; color: white; }
-        .delete-btn { background: #e74c3c; color: white; }
-        .owner-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.7em; }
-        .owner-badge.yoyopan { background: #ffebee; color: #e74c3c; }
-        .owner-badge.gaspar { background: #e8f4fd; color: #667eea; }
-        .owner-badge.annie { background: #fff8e1; color: #f39c12; }
-        .owner-badge.candy { background: #e8f5e9; color: #27ae60; }
-        .no-events { text-align: center; color: #999; padding: 25px; }
-        .connection-status {
-            position: fixed; bottom: 15px; right: 15px; padding: 8px 15px;
-            border-radius: 20px; font-size: 0.8em; color: white;
-            display: flex; align-items: center; gap: 6px; z-index: 100;
-        }
-        .connection-status.online { background: #27ae60; }
-        .connection-status.offline { background: #95a5a6; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: white; }
-        
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            .header { flex-direction: column; gap: 10px; padding: 15px; }
-            .owner-filter-group { justify-content: center; }
-            .day { height: 65px; padding: 5px; }
-            .day-number { font-size: 0.85em; }
-            .event { font-size: 0.6em; }
-            .weekday { padding: 10px 5px; font-size: 0.8em; }
-            .nav-buttons { flex-wrap: wrap; justify-content: center; }
-            .event-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .event-actions { width: 100%; }
-            .event-actions button { flex: 1; }
-            .alert-title { align-items: flex-start; flex-direction: column; gap: 4px; }
-        }
-        .toast {
-            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
-            padding: 12px 25px; border-radius: 10px; color: white; z-index: 2000;
-            animation: toastIn 0.3s;
-        }
-        .toast.success { background: #27ae60; }
-        .toast.error { background: #e74c3c; }
-        .toast.info { background: #3498db; }
-        @keyframes toastIn { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        #dayModal .btn-primary:hover { background: var(--color-accent-soft); color: var(--color-accent); }
 
-        /* ===== 學校 Syllabus 模組 ===== */
-        .syllabus-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
-        .syllabus-toolbar .btn { flex: 0 0 auto; padding: 8px 14px; font-size: 0.88em; }
-        .syllabus-body { display: flex; gap: 15px; align-items: flex-start; }
+        /* ---------- forms ---------- */
+        .form-group { margin-bottom: var(--space-sm); }
+        .form-group label {
+            display: block; margin-bottom: var(--space-2xs);
+            font-size: var(--text-xs); font-weight: 500; color: var(--color-muted);
+        }
+        .form-group input, .syllabus-form input,
+        .syllabus-main-head input, .syl-year-create input {
+            width: 100%; min-height: 38px;
+            padding: var(--space-2xs) var(--space-xs);
+            background: var(--color-paper); color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            border-radius: 0; font-size: var(--text-sm);
+        }
+        .form-group select, .syllabus-form select, .syl-year-filter select,
+        .syllabus-link-row select {
+            width: 100%; min-height: 38px;
+            padding: var(--space-2xs) var(--space-lg) var(--space-2xs) var(--space-xs);
+            background-color: var(--color-paper-2); color: var(--color-ink);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2399a8a3' stroke-width='1.4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right var(--space-sm) center;
+            border: var(--rule-hair) solid var(--color-rule);
+            border-radius: 0; font-size: var(--text-sm);
+            appearance: none; -webkit-appearance: none;
+        }
+        #studentRetainedGrade {
+            width: 100%; min-height: 38px;
+            padding: var(--space-2xs) var(--space-xs);
+            background: var(--color-paper); color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            border-radius: 0; font-size: var(--text-sm);
+        }
+        /* the optional notes field is ruled more faintly than the required ones */
+        .form-group textarea {
+            width: 100%; min-height: 74px; resize: vertical;
+            padding: var(--space-2xs) var(--space-xs);
+            background: var(--color-paper); color: var(--color-ink);
+            border: var(--rule-hair) solid color-mix(in oklab, var(--color-rule) 62%, transparent);
+            border-radius: 0; font-size: var(--text-sm);
+        }
+        .form-group input:hover, .form-group textarea:hover, .form-group select:hover { border-color: var(--color-accent); }
+        .form-group input:disabled, .form-group select:disabled, .form-group textarea:disabled,
+        #studentRetainedGrade:disabled {
+            background: var(--color-paper-2); color: var(--color-muted);
+            border-color: var(--color-rule); cursor: not-allowed;
+        }
+        .form-group input[type="checkbox"], .form-group input[type="radio"] {
+            width: auto; min-height: 0; padding: 0; margin: 0;
+            border: none; border-radius: 0; accent-color: var(--color-accent);
+        }
+        .btn-group { display: flex; gap: var(--space-xs); margin-top: var(--space-md); }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-height: 38px; padding: var(--space-2xs) var(--space-sm);
+            background: transparent; color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            border-radius: 0; font-size: var(--text-sm); font-weight: 500;
+            white-space: nowrap; cursor: pointer; flex: 1;
+            transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+        }
+        .btn:hover { background: var(--color-paper-2); border-color: var(--color-accent); color: var(--color-accent); }
+        .btn:active { transform: translateY(1px); }
+        .btn:disabled { background: transparent; color: var(--color-muted); border-color: var(--color-rule); cursor: not-allowed; box-shadow: none; }
+        .btn-primary { background: var(--color-accent); color: var(--color-accent-ink); border-color: var(--color-accent); }
+        .btn-primary:hover { background: color-mix(in oklab, var(--color-accent) 84%, var(--color-ink)); color: var(--color-accent-ink); }
+        .btn-secondary { background: transparent; }
+        .btn-secondary:hover { background: var(--color-paper-2); }
+        .btn--danger { color: var(--color-error); border-color: var(--color-error); background: transparent; }
+        .btn--danger:hover { background: var(--color-error); color: var(--color-accent-ink); }
+        .btn--icon { flex: 0 0 auto; min-width: 38px; padding: var(--space-2xs); }
+        .btn--block { width: 100%; flex: 0 0 auto; }
+
+        /* ---------- event list ---------- */
+        .event-list { margin-top: var(--space-sm); display: flex; flex-direction: column; }
+        .event-item {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: var(--space-sm);
+            padding: var(--space-xs) var(--space-sm);
+            background: transparent;
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+            box-shadow: inset 3px 0 0 var(--tone, var(--color-tone-ink));
+        }
+        .event-info { flex: 1; min-width: 0; }
+        .event-info h3 {
+            display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2xs);
+            font-size: var(--text-title); margin-bottom: var(--space-3xs);
+        }
+        .event-info p { font-size: var(--text-sm); color: var(--color-muted); }
+        .event-actions { display: flex; gap: var(--space-2xs); flex-shrink: 0; }
+        .event-actions button, .edit-btn, .delete-btn {
+            min-height: 34px; padding: var(--space-3xs) var(--space-sm);
+            background: transparent; color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-size: var(--text-xs); cursor: pointer;
+            transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+        }
+        .edit-btn:hover { background: var(--color-paper-2); color: var(--color-accent); border-color: var(--color-accent); }
+        .event-actions button.delete-btn, .delete-btn { color: var(--color-error); border-color: var(--color-error); }
+        .delete-btn:hover { background: var(--color-error); color: var(--color-accent-ink); }
+        .owner-badge {
+            padding: 1px var(--space-2xs);
+            font-family: var(--font-outlier); font-size: var(--text-2xs); font-weight: 500;
+            color: var(--color-accent-ink); background: var(--color-accent);
+            border: var(--rule-hair) solid var(--color-accent);
+            text-transform: capitalize;
+        }
+        .owner-badge.gaspar { background: var(--color-tone-rust); border-color: var(--color-tone-rust); color: var(--color-accent-ink); }
+        .owner-badge.yoyopan { background: var(--color-tone-ink); border-color: var(--color-tone-ink); color: var(--color-accent-ink); }
+        .owner-badge.annie { background: var(--color-tone-ochre); border-color: var(--color-tone-ochre); color: var(--color-accent-ink); }
+        .owner-badge.candy { background: var(--color-tone-moss); border-color: var(--color-tone-moss); color: var(--color-accent-ink); }
+
+        /* ---------- student table ---------- */
+        .student-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+        .student-table thead th {
+            padding: var(--space-xs);
+            text-align: left; font-size: var(--text-xs); font-weight: 500; color: var(--color-muted);
+            background: transparent;
+            border-top: var(--rule-hair) solid var(--color-ink-2);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+            white-space: nowrap;
+        }
+        .student-table td {
+            padding: var(--space-xs);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+            vertical-align: top;
+        }
+        .student-table tbody tr:nth-child(even) { background: var(--color-paper-2); }
+        .student-table tbody tr:hover { background: var(--color-paper-3); }
+        .student-table td.num { font-family: var(--font-outlier); font-variant-numeric: tabular-nums; }
+        .student-table td.name { font-weight: 500; }
+        .table-scroll { overflow-x: auto; }
+
+        .extra-row { display: flex; gap: var(--space-2xs); margin-bottom: var(--space-2xs); }
+        .extra-row select { flex: 0 0 96px; }
+        .extra-row input { flex: 1; min-width: 0; }
+
+        /* ---------- connection + toast ---------- */
+        .connection-status {
+            position: fixed; bottom: var(--space-md); right: var(--space-md);
+            display: flex; align-items: center; gap: var(--space-2xs);
+            padding: 0;
+            background: none; color: var(--color-muted);
+            border: 0;
+            font-size: var(--text-xs);
+            z-index: calc(var(--z-modal) - 100);
+        }
+        .status-dot { width: 6px; height: 6px; background: var(--color-muted); }
+        .connection-status.online .status-dot { background: var(--color-accent); }
+        .connection-status.online { color: var(--color-ink-2); }
+        .connection-status.offline .status-dot { background: var(--color-error); }
+        .connection-status.offline { color: var(--color-error); }
+
+        .toast {
+            position: fixed; bottom: var(--space-xl); left: 50%;
+            transform: translateX(-50%);
+            padding: var(--space-xs) var(--space-md);
+            background: var(--color-accent); color: var(--color-accent-ink);
+            border: var(--rule-hair) solid var(--color-accent);
+            box-shadow: 0 8px 20px -8px var(--color-shadow);
+            font-size: var(--text-sm); z-index: var(--z-toast);
+            animation: toastIn var(--dur-short) var(--ease-out);
+        }
+        .toast.error { background: var(--color-error); border-color: var(--color-error); color: var(--color-accent-ink); }
+        @keyframes toastIn { from { transform: translate(-50%, var(--space-md)); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        /* ---------- syllabus ---------- */
+        .syllabus-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); margin-bottom: var(--space-sm); }
+        .syllabus-toolbar .btn { flex: 0 0 auto; }
+        .syl-year-filter {
+            display: inline-flex; align-items: center; gap: var(--space-2xs);
+            padding: var(--space-3xs) var(--space-xs);
+            border: var(--rule-hair) solid var(--color-muted);
+            font-size: var(--text-sm); font-weight: 500;
+        }
+        .syl-year-filter select { width: auto; min-height: 30px; border: none; border-left: var(--rule-hair) solid var(--color-rule); background-color: transparent; }
+
+        .syllabus-body { display: flex; gap: var(--space-sm); align-items: flex-start; }
         .syllabus-sidebar {
-            flex: 0 0 235px; max-height: 55vh; overflow-y: auto;
-            border: 1px solid #e5e5e5; border-radius: 10px; padding: 8px; background: #fafafa;
+            flex: 0 0 240px; max-height: 54vh; overflow-y: auto;
+            padding: 0;
+            background: transparent;
+            border-top: var(--rule-hair) solid var(--color-rule);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
         }
-        .tree-school { margin-bottom: 6px; }
+        .tree-school { margin-bottom: 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
         .tree-school-head, .tree-class {
-            display: flex; justify-content: space-between; align-items: center; gap: 6px;
-            padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 0.86em;
+            display: flex; justify-content: space-between; align-items: center; gap: var(--space-2xs);
+            padding: var(--space-xs) var(--space-2xs);
+            font-size: var(--text-sm); cursor: pointer;
         }
-        .tree-school-head { font-weight: bold; color: #333; background: #fff; border: 1px solid #eee; }
-        .tree-school-head.active { background: #e8f4fd; border-color: #b9dcf5; }
-        .tree-school-head:hover { background: #eef5ff; }
-        .tree-class { margin-left: 10px; color: #555; }
-        .tree-class:hover { background: #f0f4ff; }
-        .tree-class.active { background: var(--accent-color); color: #fff; font-weight: bold; }
-        .tree-actions { display: flex; gap: 2px; opacity: .55; }
-        .tree-school-head:hover .tree-actions,
-        .tree-class:hover .tree-actions,
-        .tree-class.active .tree-actions { opacity: 1; }
-        .tree-actions button { background: none; border: none; cursor: pointer; font-size: 0.9em; padding: 0 2px; opacity: .8; }
-        .tree-actions button:hover { opacity: 1; }
-        .tree-class.active .tree-actions button { color: #fff; }
-        .tree-hint, .tree-empty { font-size: 0.8em; color: #999; padding: 5px 10px; line-height: 1.6; }
+        .tree-school-head { font-weight: 500; background: transparent; }
+        .tree-school-head:hover { color: var(--color-accent); }
+        .tree-school-head.active { color: var(--color-accent); box-shadow: inset 0 -2px 0 var(--color-accent); }
+        .tree-class { margin-left: var(--space-xs); color: var(--color-ink-2); }
+        .tree-class:hover { background: var(--color-paper-2); }
+        .tree-class.active { background: var(--color-accent-soft); color: var(--color-accent); font-weight: 500; }
+        .tree-actions { display: flex; gap: var(--space-3xs); }
+        .tree-actions button {
+            min-width: 24px; height: 22px; padding: 0 var(--space-2xs);
+            display: inline-grid; place-items: center;
+            background: transparent; color: var(--color-muted);
+            border: var(--rule-hair) solid transparent;
+            font-size: var(--text-2xs); line-height: 1; cursor: pointer;
+        }
+        .tree-actions button:hover { color: var(--color-accent); border-color: var(--color-rule); }
+        .tree-actions button.del { color: var(--color-error); }
+        .tree-actions button.del:hover { color: var(--color-error); border-color: var(--color-error); background: transparent; }
+        .tree-class.active .tree-actions button { color: var(--color-accent); opacity: 0.85; }
+        .tree-class.active .tree-actions button:hover { color: var(--color-accent); border-color: var(--color-accent); opacity: 1; }
+        .tree-hint, .tree-empty { font-size: var(--text-xs); color: var(--color-muted); padding: var(--space-xs); line-height: 1.5; }
+        .tree-year { font-family: var(--font-outlier); font-size: var(--text-2xs); color: var(--color-muted); margin-left: var(--space-3xs); }
+        .tree-year.muted { color: var(--color-error); }
+        .tree-class.active .tree-year { color: var(--color-accent); opacity: 0.8; }
+
         .syllabus-main { flex: 1; min-width: 0; }
-        .syllabus-main-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
-        .syllabus-main-head strong { color: #333; font-size: 0.95em; }
-        .syllabus-main-head input {
-            flex: 1; min-width: 160px; padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
-        }
-        .syllabus-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-        .syllabus-form input {
-            flex: 1; min-width: 140px; padding: 9px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
-        }
-        .syllabus-form .btn { flex: 0 0 auto; padding: 9px 14px; font-size: 0.88em; }
-        .syllabus-items { max-height: 45vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        .syllabus-main-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); margin-bottom: var(--space-xs); }
+        .syllabus-main-head strong { font-size: var(--text-title); font-weight: 700; min-width: 0; }
+        .syllabus-main-head input { flex: 1 1 180px; width: auto; }
+        .syllabus-form { display: flex; flex-wrap: wrap; gap: var(--space-2xs); margin-bottom: var(--space-xs); }
+        .syllabus-form input { flex: 1 1 160px; width: auto; }
+        .syllabus-form select { flex: 0 0 104px; width: auto; }
+        .syllabus-form .btn { flex: 0 0 auto; }
+        .syllabus-items { max-height: 44vh; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-3xs); }
         .syl-item {
-            display: flex; gap: 10px; align-items: flex-start; background: #f8f9fa;
-            border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 9px 11px;
+            display: flex; align-items: flex-start; gap: var(--space-xs);
+            padding: var(--space-2xs) var(--space-xs);
+            background: transparent;
+            border-bottom: var(--rule-hair) solid var(--color-rule);
         }
-        .syl-item-no { font-weight: bold; color: #999; font-size: 0.8em; min-width: 22px; }
+        .syl-item:hover { background: var(--color-paper-2); }
+        .syl-item-no {
+            font-family: var(--font-outlier); font-size: var(--text-2xs); color: var(--color-muted);
+            min-width: 20px; padding-top: var(--space-3xs);
+        }
         .syl-item-body { flex: 1; min-width: 0; }
-        .syl-item-text { color: #333; font-size: 0.9em; overflow-wrap: anywhere; }
-        .syl-item-note { color: #888; font-size: 0.8em; margin-top: 2px; overflow-wrap: anywhere; }
-        .syl-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .syl-item-text { font-size: var(--text-sm); overflow-wrap: anywhere; }
+        .syl-item-note { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3xs); overflow-wrap: anywhere; }
+        .syl-item-actions { display: flex; gap: var(--space-3xs); flex-shrink: 0; }
         .syl-item-actions button {
-            border: none; background: #e0e0e0; border-radius: 6px; cursor: pointer;
-            font-size: 0.75em; padding: 3px 7px; color: #444;
+            min-width: 28px; height: 26px; padding: 0 var(--space-3xs);
+            display: inline-grid; place-items: center;
+            background: transparent; color: var(--color-muted);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-size: var(--text-2xs); line-height: 1; cursor: pointer;
         }
-        .syl-item-actions button:hover { background: #d0d0d0; }
-        .syl-item-actions .del:hover { background: #e74c3c; color: #fff; }
-        .syl-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .syl-column { border: 1px solid #e9edf2; border-radius: 10px; padding: 8px; background: #fcfdff; min-width: 0; }
+        .syl-item-actions button:hover { border-color: var(--color-accent); color: var(--color-accent); }
+        .syl-item-actions .del:hover { border-color: var(--color-error); color: var(--color-error); background: transparent; }
+        .syl-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-xs); }
+        .syl-column { border: 0; border-top: var(--rule-bar) solid var(--color-rule); padding: var(--space-3xs) 0; min-width: 0; }
         .syl-column-head {
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.82em; font-weight: bold; color: #35618f; margin-bottom: 6px;
-            padding-bottom: 5px; border-bottom: 1px dashed #dbe6f3;
+            padding-bottom: var(--space-3xs); margin-bottom: var(--space-3xs);
+            border-bottom: var(--rule-hair) solid var(--color-rule);
+            font-size: var(--text-xs); font-weight: 500;
         }
-        .syl-column-head .syl-count { font-weight: normal; color: #99a3ad; }
-        .syl-track-head { font-size: 0.78em; font-weight: bold; color: #35618f; margin: 6px 0 2px; }
-        @media (max-width: 900px) { .syl-columns { grid-template-columns: 1fr; } }
-        .syl-empty { color: #999; font-size: 0.85em; padding: 10px; }
-        .syllabus-hint { font-size: 0.78em; color: #888; margin: -6px 0 10px; line-height: 1.5; }
-        .syl-year-filter {
-            display: flex; align-items: center; gap: 6px; font-size: 0.85em; font-weight: bold;
-            color: #34495e; background: #eef3fa; border: 1px solid #d7e3f1; border-radius: 10px; padding: 4px 10px;
-        }
-        .syl-year-filter select { padding: 5px 8px; border: 1px solid #cfd8e3; border-radius: 6px; font-size: 1em; background: #fff; }
-        .tree-year { font-size: 0.8em; color: #999; margin-left: 4px; font-weight: normal; }
-        .tree-year.muted { color: #c0392b; }
-        .tree-class.active .tree-year { color: rgba(255,255,255,0.8); }
-        .syl-class-year-bar {
-            display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-            margin: -2px 0 10px; font-size: 0.85em; color: #34495e;
-        }
-        .syl-year-label { font-weight: bold; }
+        .syl-column-head .syl-count { font-family: var(--font-outlier); color: var(--color-muted); font-weight: 400; }
+        .syl-track-head { font-size: var(--text-xs); font-weight: 500; color: var(--color-muted); margin: var(--space-2xs) 0 var(--space-3xs); }
+        .syl-empty { color: var(--color-muted); font-size: var(--text-xs); padding: var(--space-xs); }
+        .syllabus-hint { font-size: var(--text-xs); color: var(--color-muted); line-height: 1.5; margin: 0 0 var(--space-xs); }
+        .syl-class-year-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3xs); margin-bottom: var(--space-xs); font-size: var(--text-xs); }
+        .syl-year-label { font-weight: 500; color: var(--color-muted); }
         .syl-year-chip {
-            border: 1px solid #cfd8e3; background: #fff; color: #34495e;
-            border-radius: 999px; padding: 4px 11px; font-size: 0.95em; cursor: pointer;
+            min-height: 28px; padding: var(--space-3xs) var(--space-xs);
+            background: var(--color-paper-2); color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-family: var(--font-outlier); font-size: var(--text-2xs); cursor: pointer;
         }
-        .syl-year-chip:hover { border-color: #3498db; color: #2980b9; }
-        .syl-year-chip.active { background: #3498db; border-color: #3498db; color: #fff; font-weight: bold; }
-        .syl-year-chip.add { border-style: dashed; color: #2980b9; }
-        .syl-year-chip.del { color: #c0392b; border-color: #eec4bf; }
-        .syl-year-chip.del:hover { background: #fdecea; border-color: #e74c3c; color: #c0392b; }
-        .syl-year-none { color: #c0392b; }
-        .syl-year-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
+        .syl-year-chip:hover { border-color: var(--color-accent); color: var(--color-accent); }
+        .syl-year-chip.active { background: var(--color-accent); color: var(--color-accent-ink); border-color: var(--color-accent); }
+        .syl-year-chip.add { border-style: dashed; border-color: var(--color-muted); }
+        .syl-year-chip.del { color: var(--color-error); border-color: var(--color-error); }
+        .syl-year-chip.del:hover { background: transparent; color: var(--color-error); }
+        .syl-year-none { color: var(--color-error); }
+        .syl-year-list { display: flex; flex-wrap: wrap; gap: var(--space-2xs); margin-bottom: var(--space-md); }
         .syl-year-option {
-            border: 1px solid #cfd8e3; background: #f7fbff; color: #2c3e50;
-            border-radius: 10px; padding: 9px 16px; cursor: pointer; font-size: 0.95em;
+            min-height: 36px; padding: var(--space-2xs) var(--space-sm);
+            background: var(--color-paper-2); color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-family: var(--font-outlier); font-size: var(--text-sm); cursor: pointer;
         }
-        .syl-year-option:hover:not(:disabled) { border-color: #3498db; background: #eaf4ff; }
-        .syl-year-option:disabled { opacity: 0.5; cursor: default; background: #f0f0f0; }
-        .syl-year-create { display: flex; gap: 8px; flex-wrap: wrap; }
-        .syl-year-create input {
-            flex: 1; min-width: 150px; padding: 9px 10px;
-            border: 1px solid #cfd8e3; border-radius: 8px; font-size: 1em;
+        .syl-year-option:hover:not(:disabled) { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-paper-3); }
+        .syl-year-option:disabled {
+            background: var(--color-paper-2); color: var(--color-muted);
+            border-color: var(--color-rule); cursor: not-allowed;
         }
-        .syl-danger-btn { background: #e74c3c; color: #fff; }
-        .syl-danger-btn:hover { background: #c0392b; }
+        .syl-year-create { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+        .syl-year-create input { flex: 1 1 160px; width: auto; }
+        .syl-danger-btn { flex: 0 0 auto; color: var(--color-error); border-color: var(--color-error); }
+        .syl-danger-btn:hover { background: transparent; color: var(--color-error); }
 
-        /* 貼上匯入 */
+        /* ---------- paste import ---------- */
         .paste-area {
-            width: 100%; min-height: 130px; padding: 10px 12px; border: 2px dashed #b9dcf5;
-            border-radius: 10px; font-family: Consolas, monospace; font-size: 0.85em; resize: vertical;
+            width: 100%; min-height: 128px;
+            padding: var(--space-xs); margin-bottom: var(--space-2xs);
+            background: var(--color-plate); color: var(--color-ink);
+            border: var(--rule-hair) dashed var(--color-muted);
+            font-family: var(--font-outlier); font-size: var(--text-xs);
+            resize: vertical;
         }
-        .paste-options { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 10px 0; font-size: 0.85em; color: #555; }
-        .paste-options select { padding: 5px 8px; border: 1px solid #ddd; border-radius: 6px; }
-        .paste-options label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
-        .paste-preview-wrap { max-height: 220px; overflow: auto; border: 1px solid #eee; border-radius: 8px; }
-        .paste-preview { width: 100%; border-collapse: collapse; font-size: 0.82em; }
-        .paste-preview th { background: #f0f0f0; padding: 6px 8px; text-align: left; position: sticky; top: 0; }
-        .paste-preview td { padding: 6px 8px; border-top: 1px solid #eee; overflow-wrap: anywhere; vertical-align: top; }
-        .paste-preview td.idx { color: #aaa; width: 40px; }
-        .paste-summary { font-size: 0.82em; color: #666; margin-top: 8px; }
+        .paste-options { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-xs); font-size: var(--text-xs); color: var(--color-muted); }
+        /* selects that sit inside a sentence read as underlines */
+        .paste-options select, #pasteTrack {
+            width: auto; min-height: 26px; padding: 0 var(--space-md) 0 0;
+            color: var(--color-ink); font-size: var(--text-sm);
+            appearance: none; -webkit-appearance: none;
+            border: 0; border-bottom: var(--rule-hair) solid var(--color-rule); border-radius: 0;
+            background-color: transparent;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2399a8a3' stroke-width='1.4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 2px center;
+        }
+        .paste-options select:hover, #pasteTrack:hover { border-bottom-color: var(--color-accent); }
+        .paste-options label { display: inline-flex; align-items: center; gap: var(--space-3xs); cursor: pointer; }
+        .paste-preview-wrap { max-height: 220px; overflow: auto; border: var(--rule-hair) solid var(--color-rule); }
+        .paste-preview { width: 100%; border-collapse: collapse; font-size: var(--text-xs); }
+        .paste-preview th {
+            position: sticky; top: 0;
+            padding: var(--space-2xs) var(--space-xs); text-align: left;
+            background: var(--color-plate); color: var(--color-muted); font-weight: 500;
+            border-bottom: var(--rule-hair) solid var(--color-ink-2);
+        }
+        .paste-preview td { padding: var(--space-2xs) var(--space-xs); border-top: var(--rule-hair) solid var(--color-rule); overflow-wrap: anywhere; vertical-align: top; }
+        .paste-preview td.idx { font-family: var(--font-outlier); color: var(--color-muted); width: 40px; }
+        .paste-summary { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-2xs); }
+        .paste-empty { color: var(--color-muted); padding: var(--space-sm); }
 
-        /* 日程 ↔ Syllabus 連動 */
-        .syllabus-link-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-        .syllabus-link-row select {
-            flex: 1; min-width: 130px; padding: 8px 10px; border: 2px solid #e0e0e0; border-radius: 8px;
-        }
-        .event-syllabus-options { max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 6px; }
-        /* 用 .form-group label.syl-check 提高優先度，避免被 .form-group label 的 block/bold 蓋過 */
+        /* ---------- schedule ↔ syllabus link ---------- */
+        .syllabus-link-row { display: flex; flex-wrap: wrap; gap: var(--space-2xs); margin-bottom: var(--space-2xs); }
+        .syllabus-link-row select { flex: 1 1 120px; width: auto; }
+        .event-syllabus-options { max-height: 148px; overflow-y: auto; border: var(--rule-hair) solid var(--color-rule); padding: var(--space-3xs); }
         .form-group label.syl-check {
-            display: flex; align-items: flex-start; gap: 8px;
-            margin: 0 0 2px; padding: 6px 8px; border-radius: 6px;
-            font-size: 0.85em; font-weight: normal; color: inherit; cursor: pointer;
+            display: flex; align-items: flex-start; gap: var(--space-2xs);
+            margin: 0; padding: var(--space-3xs) var(--space-2xs);
+            font-size: var(--text-xs); font-weight: 400; color: inherit; cursor: pointer;
+            border: var(--rule-hair) solid transparent;
         }
-        .syl-check:hover { background: #f5f8ff; }
-        .syl-check.checked { background: #eaf4ff; }
-        .syl-check input[type="checkbox"] { width: 16px; height: 16px; margin: 1px 0 0; flex: 0 0 auto; cursor: pointer; }
-        .syl-check > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; line-height: 1.45; }
-        .syl-check > em { flex: 0 0 auto; color: #999; font-style: normal; font-size: 0.9em; line-height: 1.45; }
-        .event-syllabus-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        .syl-check:hover { background: var(--color-paper-2); }
+        .syl-check.checked { background: var(--color-accent-soft); border-color: var(--color-accent); }
+        .syl-check input[type="checkbox"] { width: 15px; height: 15px; margin: 1px 0 0; flex: 0 0 auto; cursor: pointer; }
+        .syl-check > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; line-height: 1.4; }
+        .syl-check > em { flex: 0 0 auto; color: var(--color-muted); font-style: normal; font-size: var(--text-2xs); line-height: 1.4; }
+        .event-syllabus-chips { display: flex; flex-wrap: wrap; gap: var(--space-3xs); margin-top: var(--space-2xs); }
         .syl-chip {
-            background: #eaf4ff; color: #2c6ca8; border-radius: 12px; padding: 3px 9px;
-            font-size: 0.75em; display: inline-flex; gap: 5px; align-items: center;
+            display: inline-flex; align-items: center; gap: var(--space-3xs);
+            padding: 1px var(--space-2xs);
+            background: var(--color-paper-2); color: var(--color-ink);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-size: var(--text-2xs);
         }
-        .syl-chip button { border: none; background: none; cursor: pointer; color: #2c6ca8; font-size: 1em; padding: 0; }
-        .event-syllabus-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-        .syl-tag { background: #eaf4ff; color: #2c6ca8; border-radius: 10px; padding: 2px 8px; font-size: 0.72em; }
+        .syl-chip button { border: none; background: none; cursor: pointer; color: var(--color-muted); font-size: var(--text-xs); padding: 0; line-height: 1; }
+        .syl-chip button:hover { color: var(--color-error); }
+        .event-syllabus-tags { display: flex; flex-wrap: wrap; gap: var(--space-3xs); margin-top: var(--space-3xs); }
+        .syl-tag {
+            padding: 1px var(--space-2xs);
+            background: var(--color-paper-2); color: var(--color-ink-2);
+            border: var(--rule-hair) solid var(--color-rule);
+            font-size: var(--text-2xs);
+        }
 
-        @media (max-width: 768px) {
+        @media (max-width: 60rem) {
+            :root { --gutter: 16px; }
+            body { padding: var(--space-md) var(--gutter) var(--space-xl); }
+            .header { grid-template-columns: 1fr; align-items: start; }
+            .month-nav { margin-left: 0; }
             .syllabus-body { flex-direction: column; }
-            .syllabus-sidebar { flex: 1 1 auto; width: 100%; max-height: 28vh; }
+            .syllabus-sidebar { flex: 1 1 auto; width: 100%; max-height: 30vh; }
         }
-    </style>
+        @media (max-width: 40rem) {
+            .connection-status { position: static; width: fit-content; margin: var(--space-sm) 0 0 auto; }
+            .header-top { row-gap: var(--space-2xs); }
+            .theme-toggle { order: 2; margin-left: auto; }
+            .month-nav { order: 3; flex: 1 1 100%; margin-left: 0; justify-content: flex-end; }
+            .day { min-height: 72px; padding: var(--space-3xs) var(--space-3xs) var(--space-xs); }
+            .events-container { display: flex; gap: var(--space-3xs); }
+            .event {
+                height: 6px; padding: 0; font-size: 0;
+                background: var(--tone, var(--color-muted));
+                box-shadow: none; border: 0;
+            }
+            .day.other-month .event {
+                background: color-mix(in oklab, var(--tone, var(--color-muted)) 45%, var(--color-paper));
+            }
+            .event:nth-child(n+3) { display: none; }
+            .weekday { padding: var(--space-2xs) 0; font-size: var(--text-2xs); }
+            .current-month { min-width: 4.2em; }
+            .nav-buttons {
+                display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: var(--space-2xs); width: 100%;
+            }
+            .nav-buttons .switch-calendar-btn { grid-column: span 2; }
+            .nav-btn { min-height: 38px; padding: var(--space-2xs) var(--space-2xs); }
+            .modal-content { padding: var(--space-sm); }
+            .syl-columns { grid-template-columns: 1fr; }
+            .syl-item-actions { flex-direction: column; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *:not(.keep-motion), *:not(.keep-motion)::before, *:not(.keep-motion)::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+</style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="logo">
-                <span id="logoIcon">📐</span>
-                <span id="logoText">數學測考</span>
+        <header class="header">
+            <div class="header-top">
+                <div class="logo">
+                    <span id="logoIcon" aria-hidden="true">A</span>
+                    <span id="logoText">數學測考</span>
+                </div>
+                <div class="month-nav">
+                    <button type="button" class="month-step" onclick="previousMonth()" aria-label="上一個月">上月</button>
+                    <span class="current-month" id="currentMonth"></span>
+                    <button type="button" class="month-step" onclick="nextMonth()" aria-label="下一個月">下月</button>
+                    <button type="button" class="nav-btn today-btn" onclick="goToToday()">今天</button>
+                </div>
+                <button type="button" id="themeToggle" class="theme-toggle" onclick="toggleTheme()" aria-label="切換至白天模式">白天</button>
             </div>
-            <div class="nav-buttons">
-                <button class="nav-btn switch-calendar-btn" onclick="toggleCalendarMode()">🔄 切換其他測考及假期</button>
-                <button class="nav-btn" onclick="previousMonth()">◀ 上月</button>
-                <span class="current-month" id="currentMonth"></span>
-                <button class="nav-btn" onclick="nextMonth()">下月 ▶</button>
-                <button class="nav-btn today-btn" onclick="goToToday()">今天</button>
-                <button class="nav-btn" style="background:#e67e22;" onclick="openStudentList()">📋 學生報名</button>
-                <button class="nav-btn" style="background:#27ae60;" onclick="openExportRangeModal()">📥 匯出日程</button>
-                <button class="nav-btn" style="background:#2980b9;" onclick="triggerCalendarImport()">📤 匯入日程</button>
-                <button class="nav-btn" style="background:#16a085;" onclick="openSyllabusModal()">📚 Syllabus</button>
+            <div class="header-sub">
+                <div class="owner-filter-group">
+                    <button class="owner-filter-btn" id="filter-gaspar" onclick="toggleOwnerFilter('gaspar')">Gaspar</button>
+                    <button class="owner-filter-btn" id="filter-yoyopan" onclick="toggleOwnerFilter('yoyopan')">Yoyopan</button>
+                    <button class="owner-filter-btn" id="filter-annie" onclick="toggleOwnerFilter('annie')">Annie</button>
+                    <button class="owner-filter-btn" id="filter-candy" onclick="toggleOwnerFilter('candy')">Candy</button>
+                </div>
+                <div class="nav-buttons">
+                    <button class="nav-btn switch-calendar-btn" onclick="toggleCalendarMode()">切換其他測考及假期</button>
+                    <button class="nav-btn" onclick="openStudentList()">學生報名</button>
+                    <button class="nav-btn" onclick="openExportRangeModal()">匯出日程</button>
+                    <button class="nav-btn" onclick="triggerCalendarImport()">匯入日程</button>
+                    <button class="nav-btn" onclick="openSyllabusModal()">Syllabus</button>
+                </div>
             </div>
-            <div class="owner-filter-group">
-                <button class="owner-filter-btn" id="filter-gaspar" onclick="toggleOwnerFilter('gaspar')">Gaspar</button>
-                <button class="owner-filter-btn" id="filter-yoyopan" onclick="toggleOwnerFilter('yoyopan')">Yoyopan</button>
-                <button class="owner-filter-btn" id="filter-annie" onclick="toggleOwnerFilter('annie')">Annie</button>
-                <button class="owner-filter-btn" id="filter-candy" onclick="toggleOwnerFilter('candy')">Candy</button>
-            </div>
-        </div>
+        </header>
 
         <input type="file" id="calendarImportFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleCalendarImport(this)">
 
@@ -408,20 +870,20 @@
                 <div class="weekday">週三</div><div class="weekday">週四</div><div class="weekday">週五</div><div class="weekday">週六</div>
             </div>
             <div class="days" id="calendarDays"></div>
+            <div class="calendar-loading" id="calendarLoading" role="status">正在讀取日程…</div>
         </div>
 
         <!-- 提醒區域 (僅在日曆 A 顯示) -->
         <div id="upcomingAlerts" class="alerts-container" style="display: none;">
             <div class="alerts-header">
-                <span class="alerts-icon">🔔</span>
-                <span>未來兩週預覽 (來自其他測考及假期)</span>
+                <span>未來兩週預覽（來自其他測考及假期）</span>
             </div>
-            <div class="alert-list" id="alertList"><div class="no-upcoming">載入中...</div></div>
+            <div class="alert-list" id="alertList"><div class="no-upcoming">載入中…</div></div>
         </div>
     </div>
 
     <div class="connection-status offline" id="connectionStatus">
-        <span class="status-dot"></span><span id="statusText">連接中...</span>
+        <span class="status-dot"></span><span id="statusText">連接中…</span>
     </div>
 
     <div class="modal" id="dayModal">
@@ -430,7 +892,7 @@
                 <h2 id="modalDate"></h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
-            <button class="btn btn-primary" style="width:100%; margin-bottom:15px;" onclick="showAddForm()">➕ 添加日程</button>
+            <button class="btn btn-primary btn--block mb-sm" onclick="showAddForm()">添加日程</button>
             <div class="event-list" id="eventList"></div>
         </div>
     </div>
@@ -443,11 +905,11 @@
             </div>
             <form id="eventForm" onsubmit="saveEvent(event)">
                 <div class="form-group">
-                    <label>📝 標題</label>
+                    <label>標題</label>
                     <input type="text" id="eventTitle" placeholder="例如：微積分測驗" required>
                 </div>
                 <div class="form-group">
-                    <label>👤 負責人</label>
+                    <label>負責人</label>
                     <select id="eventOwner">
                         <option value="yoyopan">yoyopan</option>
                         <option value="gaspar">gaspar</option>
@@ -456,11 +918,11 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>📋 備註</label>
+                    <label>備註</label>
                     <textarea id="eventDescription" placeholder="考試範圍、地點等說明"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>📚 對應 Syllabus（可選）</label>
+                    <label>對應 Syllabus（可選）</label>
                     <div class="syllabus-link-row">
                         <select id="eventSyllabusSchool" onchange="onEventSyllabusSchoolChange()"></select>
                         <select id="eventSyllabusClass" onchange="onEventSyllabusClassChange()"></select>
@@ -471,7 +933,7 @@
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" onclick="closeEventModal()">取消</button>
-                    <button type="submit" class="btn btn-primary">💾 保存</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
                 </div>
             </form>
         </div>
@@ -481,73 +943,73 @@
     <div class="modal" id="exportRangeModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>📥 匯出日程</h2>
+                <h2>匯出日程</h2>
                 <button class="close-btn" onclick="closeExportRangeModal()">&times;</button>
             </div>
-            <p style="margin-bottom:15px; color:#666; font-size:0.9em;">選擇要匯出的起始與結束月份（支援跨年份）</p>
-            <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px;">
-                <div class="form-group" style="flex:1; min-width:130px;">
+            <p class="form-note">選擇要匯出的起始與結束月份（支援跨年份）</p>
+            <div class="form-grid">
+                <div class="form-group">
                     <label>起始月份</label>
-                    <select id="exportStartYear" style="width:100%; margin-bottom:6px;"></select>
-                    <select id="exportStartMonth" style="width:100%;"></select>
+                    <select id="exportStartYear" class="mb-sm"></select>
+                    <select id="exportStartMonth"></select>
                 </div>
-                <div class="form-group" style="flex:1; min-width:130px;">
+                <div class="form-group">
                     <label>結束月份</label>
-                    <select id="exportEndYear" style="width:100%; margin-bottom:6px;"></select>
-                    <select id="exportEndMonth" style="width:100%;"></select>
+                    <select id="exportEndYear" class="mb-sm"></select>
+                    <select id="exportEndMonth"></select>
                 </div>
             </div>
             <div class="btn-group">
                 <button type="button" class="btn btn-secondary" onclick="closeExportRangeModal()">取消</button>
-                <button type="button" class="btn btn-primary" onclick="doExportCalendar()">📥 匯出</button>
+                <button type="button" class="btn btn-primary" onclick="doExportCalendar()">匯出</button>
             </div>
         </div>
     </div>
 
     <!-- 學生報名列表 Modal -->
     <div class="modal" id="studentListModal">
-        <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-content modal-content--wide">
             <div class="modal-header">
-                <h2>📋 學生報名表</h2>
+                <h2>學生報名表</h2>
                 <button class="close-btn" onclick="closeStudentListModal()">&times;</button>
             </div>
-            <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-                <button class="btn btn-primary" onclick="showStudentForm()">➕ 新增報名</button>
-                <button class="btn" style="background:#27ae60; color:white;" onclick="exportToExcel()">📥 匯出 Excel</button>
-                <button class="btn" style="background:#8e44ad; color:white;" onclick="document.getElementById('importFileInput').click()">📤 匯入 Excel</button>
-                <button class="btn" style="background:#c0392b; color:white;" onclick="clearAllStudents()">🗑️ 一鍵清空</button>
+            <div class="row-actions">
+                <button class="btn btn-primary" onclick="showStudentForm()">新增報名</button>
+                <button class="btn" onclick="exportToExcel()">匯出 Excel</button>
+                <button class="btn" onclick="document.getElementById('importFileInput').click()">匯入 Excel</button>
+                <button class="btn btn--danger" onclick="clearAllStudents()">一鍵清空</button>
                 <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleImportFile(this)">
-                <span id="studentCount" style="display:flex; align-items:center; color:#666; font-size:0.9em;"></span>
+                <span id="studentCount" class="count-note"></span>
             </div>
-            <div style="overflow-x:auto;">
-                <table id="studentTable" style="width:100%; border-collapse:collapse; font-size:0.85em;">
+            <div class="table-scroll">
+                <table id="studentTable" class="student-table">
                     <thead>
-                        <tr style="background:#f0f0f0;">
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">中文姓名</th>
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">English Name</th>
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Class</th>
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Mobile</th>
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">可補習日子</th>
-                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">留班</th>
-                            <th style="padding:8px; text-align:center; border-bottom:2px solid #ddd;">操作</th>
+                        <tr>
+                            <th>中文姓名</th>
+                            <th>English Name</th>
+                            <th>Class</th>
+                            <th>Mobile</th>
+                            <th>可補習日子</th>
+                            <th>留班</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="studentTableBody"></tbody>
                 </table>
             </div>
-            <div id="noStudentData" class="no-events">📭 暫無學生報名資料</div>
+            <div id="noStudentData" class="no-events">暫無學生報名資料</div>
         </div>
     </div>
 
     <!-- 學生報名表單 Modal -->
     <div class="modal" id="studentFormModal">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content modal-content--md">
             <div class="modal-header">
                 <h2 id="studentFormTitle">新增報名</h2>
                 <button class="close-btn" onclick="closeStudentFormModal()">&times;</button>
             </div>
             <form id="studentForm" onsubmit="saveStudent(event)">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-grid">
                     <div class="form-group">
                         <label>中文姓名 *</label>
                         <input type="text" id="studentChineseName" placeholder="中文姓名" required>
@@ -571,19 +1033,19 @@
                 </div>
                 <div class="form-group">
                     <label>主要聯絡人</label>
-                    <div style="display:flex; gap:16px; flex-wrap:wrap;">
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                    <div class="choice-row">
+                        <label class="choice">
                             <input type="radio" name="primaryContact" value="father" checked> 父親
                         </label>
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <label class="choice">
                             <input type="radio" name="primaryContact" value="mother"> 母親
                         </label>
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <label class="choice">
                             <input type="radio" name="primaryContact" value="other"> 其他聯絡人
                         </label>
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-grid">
                     <div class="form-group">
                         <label>姓名（父親）</label>
                         <input type="text" id="studentFatherName" placeholder="父親姓名">
@@ -593,7 +1055,7 @@
                         <input type="tel" id="studentFatherPhone" placeholder="父親電話">
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-grid">
                     <div class="form-group">
                         <label>姓名（母親）</label>
                         <input type="text" id="studentMotherName" placeholder="母親姓名">
@@ -603,7 +1065,7 @@
                         <input type="tel" id="studentMotherPhone" placeholder="母親電話">
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-grid">
                     <div class="form-group">
                         <label>其他聯絡人</label>
                         <input type="text" id="studentOtherContact" placeholder="其他聯絡人姓名">
@@ -619,23 +1081,23 @@
                 </div>
                 <div class="form-group">
                     <label>可補習日子</label>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;" id="daysCheckboxGroup">
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                    <div class="choice-row" id="daysCheckboxGroup">
+                        <label class="choice">
                             <input type="checkbox" value="Mon"> Mon
                         </label>
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <label class="choice">
                             <input type="checkbox" value="Tue"> Tue
                         </label>
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <label class="choice">
                             <input type="checkbox" value="Wed"> Wed
                         </label>
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <label class="choice">
                             <input type="checkbox" value="Thu"> Thu
                         </label>
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <label class="choice">
                             <input type="checkbox" value="Fri"> Fri
                         </label>
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <label class="choice">
                             <input type="checkbox" value="Sat"> Sat
                         </label>
                     </div>
@@ -644,19 +1106,19 @@
                     <label>校外活動</label>
                     <div id="extracurricularContainer">
                     </div>
-                    <button type="button" onclick="addExtraRow()" style="background:#3498db; color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; font-size:0.9em; margin-top:4px;">➕ 新增活動</button>
+                    <button type="button" class="btn btn--sm" onclick="addExtraRow()">新增活動</button>
                 </div>
                 <div class="form-group">
                     <label>留班記錄</label>
-                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                    <div class="choice-row">
+                        <label class="choice">
                             <input type="radio" name="retained" value="no" checked onchange="toggleRetainedGrade(false)"> 無留班
                         </label>
-                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <label class="choice">
                             <input type="radio" name="retained" value="yes" onchange="toggleRetainedGrade(true)"> 有留班
                         </label>
-                        <span style="color:#999; font-size:0.85em;">留班年級：</span>
-                        <select id="studentRetainedGrade" disabled style="padding:8px; border:2px solid #e0e0e0; border-radius:8px; font-size:0.9em;">
+                        <span class="field-note">留班年級：</span>
+                        <select id="studentRetainedGrade" disabled>
                             <option value="">請選擇</option>
                             <option value="小一">小一</option>
                             <option value="小二">小二</option>
@@ -675,7 +1137,7 @@
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" onclick="closeStudentFormModal()">取消</button>
-                    <button type="submit" class="btn btn-primary">💾 保存</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
                 </div>
             </form>
         </div>
@@ -683,21 +1145,21 @@
 
     <!-- 學校 Syllabus Modal -->
     <div class="modal" id="syllabusModal">
-        <div class="modal-content" style="max-width: 1050px; width: 95%;">
+        <div class="modal-content modal-content--xl">
             <div class="modal-header">
-                <h2>📚 學校 Syllabus 管理</h2>
+                <h2>學校 Syllabus 管理</h2>
                 <button class="close-btn" onclick="closeSyllabusModal()">&times;</button>
             </div>
             <div class="syllabus-toolbar">
-                <label class="syl-year-filter">📅 學年
+                <label class="syl-year-filter">學年
                     <select id="syllabusYearFilter" onchange="onSyllabusYearFilterChange()"></select>
                 </label>
-                <button class="btn" style="background:#8e44ad; color:white;" onclick="openYearPickerForSelection()">＋ 新增學年</button>
-                <button class="btn" style="background:#3498db; color:white;" onclick="addSchoolPrompt()">➕ 新增學校</button>
-                <button class="btn" style="background:#9b59b6; color:white;" onclick="addClassPrompt()">➕ 新增班級</button>
-                <button class="btn" style="background:#e67e22; color:white;" onclick="openSyllabusPaste()">📤 貼上匯入</button>
-                <button class="btn" style="background:#27ae60; color:white;" onclick="exportSyllabusExcel()">📥 匯出 Excel</button>
-                <button class="btn" style="background:#16a085; color:white;" onclick="document.getElementById('syllabusFileInput').click()">📄 匯入 Excel</button>
+                <button class="btn" onclick="openYearPickerForSelection()">新增學年</button>
+                <button class="btn" onclick="addSchoolPrompt()">新增學校</button>
+                <button class="btn" onclick="addClassPrompt()">新增班級</button>
+                <button class="btn" onclick="openSyllabusPaste()">貼上匯入</button>
+                <button class="btn" onclick="exportSyllabusExcel()">匯出 Excel</button>
+                <button class="btn" onclick="document.getElementById('syllabusFileInput').click()">匯入 Excel</button>
                 <input type="file" id="syllabusFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleSyllabusFile(this)">
             </div>
             <div class="syllabus-body">
@@ -705,18 +1167,18 @@
                 <div class="syllabus-main">
                     <div class="syllabus-main-head">
                         <strong id="syllabusTitle">請先選擇學校及班級</strong>
-                        <input type="text" id="syllabusSearch" placeholder="🔍 搜尋內容／備註" oninput="renderSyllabusItems()">
-                        <button type="button" class="btn syl-danger-btn" id="syllabusDeleteClassBtn" style="display:none; flex:0 0 auto; padding:8px 14px; font-size:0.85em;" onclick="deleteSelectedClass()">🗑 刪除班級</button>
+                        <input type="text" id="syllabusSearch" placeholder="搜尋內容／備註" oninput="renderSyllabusItems()">
+                        <button type="button" class="btn syl-danger-btn" id="syllabusDeleteClassBtn" style="display:none;" onclick="deleteSelectedClass()">刪除班級</button>
                     </div>
                     <div class="syl-class-year-bar" id="sylClassYearBar" style="display:none;"></div>
                     <div class="syllabus-form" id="syllabusForm" style="display:none;">
-                        <select id="syllabusItemTrack" style="display:none; flex:0 0 110px; padding:9px 8px; border:2px solid #e0e0e0; border-radius:8px;">
+                        <select id="syllabusItemTrack" style="display:none;">
                             <option value="1">第一列</option>
                             <option value="2">第二列</option>
                         </select>
                         <input type="text" id="syllabusItemText" placeholder="項目內容，例如：第3章 二次函數">
                         <input type="text" id="syllabusItemNote" placeholder="備註（可留空）">
-                        <button type="button" class="btn btn-primary" id="syllabusSaveBtn" onclick="saveSyllabusItem()">➕ 新增</button>
+                        <button type="button" class="btn btn-primary" id="syllabusSaveBtn" onclick="saveSyllabusItem()">新增</button>
                         <button type="button" class="btn btn-secondary" id="syllabusCancelBtn" style="display:none;" onclick="cancelSyllabusEdit()">取消</button>
                     </div>
                     <div id="syllabusItems" class="syllabus-items"></div>
@@ -728,36 +1190,36 @@
 
     <!-- 學年選擇／新增 Modal -->
     <div class="modal" id="sylYearModal">
-        <div class="modal-content" style="max-width: 560px;">
+        <div class="modal-content modal-content--md">
             <div class="modal-header">
-                <h2>📅 選擇或新增學年</h2>
+                <h2>選擇或新增學年</h2>
                 <button class="close-btn" onclick="closeYearPicker()">&times;</button>
             </div>
-            <p id="sylYearHint" class="syllabus-hint" style="margin-top:0;"></p>
+            <p id="sylYearHint" class="syllabus-hint"></p>
             <div class="syl-year-list" id="sylYearList"></div>
             <div class="syl-year-create">
                 <input type="text" id="sylYearNewInput" placeholder="例如：2027-2028" onkeydown="if(event.key==='Enter'){event.preventDefault();createYearFromModal();}">
-                <button type="button" class="btn" style="background:#27ae60; color:#fff; flex:0 0 auto;" onclick="createYearFromModal()">➕ 建立新學年</button>
+                <button type="button" class="btn btn-primary" onclick="createYearFromModal()">建立新學年</button>
             </div>
-            <p class="syllabus-hint" style="margin-top:10px;">學年格式會自動整理，例如 `2027`、`2027/2028`、`2027-28` 都會變成 `2027-2028`。</p>
+            <p class="syllabus-hint">學年格式會自動整理，例如 `2027`、`2027/2028`、`2027-28` 都會變成 `2027-2028`。</p>
         </div>
     </div>
 
     <!-- Syllabus 貼上匯入 Modal -->
     <div class="modal" id="syllabusPasteModal">
-        <div class="modal-content" style="max-width: 900px; width: 95%;">
+        <div class="modal-content modal-content--wide">
             <div class="modal-header">
-                <h2>📤 貼上匯入 Syllabus</h2>
+                <h2>貼上匯入 Syllabus</h2>
                 <button class="close-btn" onclick="closeSyllabusPaste()">&times;</button>
             </div>
-            <p id="pasteTargetLabel" style="margin-bottom:10px; color:#555; font-size:0.9em;"></p>
-            <div id="pasteTrackRow" style="display:none; margin-bottom:10px; font-size:0.9em; color:#444;">
-                📑 匯入到：
-                <select id="pasteTrack" style="padding:6px 10px; border:1px solid #cfd8e3; border-radius:6px;">
+            <p id="pasteTargetLabel" class="form-note"></p>
+            <div id="pasteTrackRow" class="row-actions" style="display:none;">
+                匯入到：
+                <select id="pasteTrack">
                     <option value="1">第一列</option>
                     <option value="2">第二列</option>
                 </select>
-                <span style="color:#999; font-size:0.85em;">（此學校為雙列模式）</span>
+                <span class="field-note">（此學校為雙列模式）</span>
             </div>
             <textarea id="syllabusPasteArea" class="paste-area"
                 placeholder="由 Word / Excel 直接 Ctrl+V 貼上…&#10;&#10;• Excel：可一次貼多行多欄，系統會自動分欄&#10;• Word：一行一個項目（表格亦可）"
@@ -774,7 +1236,7 @@
             <div class="paste-summary" id="pasteSummary"></div>
             <div class="btn-group">
                 <button type="button" class="btn btn-secondary" onclick="closeSyllabusPaste()">取消</button>
-                <button type="button" class="btn btn-primary" onclick="confirmSyllabusPaste()">✅ 匯入</button>
+                <button type="button" class="btn btn-primary" onclick="confirmSyllabusPaste()">匯入</button>
             </div>
         </div>
     </div>
@@ -798,6 +1260,7 @@
         let events = {};
         let editingEventId = null;
         let isConnected = false;
+        let calendarDataLoaded = false;
         
         // 狀態管理
         let currentCalendarId = 'calendarA'; 
@@ -830,17 +1293,17 @@
         const calendarConfigs = {
             calendarA: { 
                 name: '數學測考', 
-                icon: '📐', 
+                icon: 'A', 
                 dbPath: 'events', 
                 storageKey: 'sharedCalendarEvents_A', 
-                switchBtnText: '🔄 切換其他測考及假期' 
+                switchBtnText: '切換其他測考及假期' 
             },
             calendarB: { 
                 name: '其他測考及假期', 
-                icon: '🗓️', 
+                icon: 'B', 
                 dbPath: 'events_other', 
                 storageKey: 'sharedCalendarEvents_B', 
-                switchBtnText: '🔄 切換數學測考' 
+                switchBtnText: '切換數學測考' 
             }
         };
 
@@ -897,6 +1360,7 @@
                 renderUpcomingAlerts();
             }
 
+            calendarDataLoaded = false;
             eventsRef = database.ref(config.dbPath);
             loadLocalData();
             renderCalendar();
@@ -927,7 +1391,9 @@
 
             eventsRef.on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (JSON.stringify(events) !== JSON.stringify(data)) {
+                const firstLoad = !calendarDataLoaded;
+                calendarDataLoaded = true;
+                if (firstLoad || JSON.stringify(events) !== JSON.stringify(data)) {
                     events = data || {};
                     saveLocalData();
                     renderCalendar();
@@ -936,6 +1402,8 @@
                 updateStatus(true);
             }, (error) => {
                 console.error("[Firebase] 讀取錯誤:", error);
+                calendarDataLoaded = true;
+                renderCalendar();
                 updateStatus(false);
             });
         }
@@ -976,12 +1444,14 @@
                     if (!groupedMap.has(title)) {
                         groupedMap.set(title, {
                             title,
+                            owners: new Set(ev.owner ? [ev.owner] : []),
                             dateMap: new Map(),
                             firstTimestamp: eventDate.getTime()
                         });
                     }
 
                     const group = groupedMap.get(title);
+                    if (ev.owner) group.owners.add(ev.owner);
                     const dayKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
 
                     if (!group.dateMap.has(dayKey)) {
@@ -999,7 +1469,7 @@
             const groupedEvents = Array.from(groupedMap.values()).sort((a, b) => a.firstTimestamp - b.firstTimestamp);
 
             if (groupedEvents.length === 0) {
-                listEl.innerHTML = '<div class="no-upcoming">✅ 未來兩週沒有來自「其他測考及假期」的日程</div>';
+                listEl.innerHTML = '<div class="no-upcoming">未來兩週沒有來自「其他測考及假期」的日程</div>';
                 return;
             }
 
@@ -1014,11 +1484,12 @@
                     const d = dateEntries[0].date;
                     const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     if (!singleDayByDate.has(dateKey)) {
-                        singleDayByDate.set(dateKey, { date: d, titles: [] });
+                        singleDayByDate.set(dateKey, { date: d, titles: [], owners: [] });
                     }
                     singleDayByDate.get(dateKey).titles.push(group.title);
+                    singleDayByDate.get(dateKey).owners.push(group.owners.size === 1 ? [...group.owners][0] : '');
                 } else {
-                    multiDayGroups.push({ title: group.title, dates: dateEntries.map(entry => entry.date), firstTimestamp: group.firstTimestamp });
+                    multiDayGroups.push({ title: group.title, owner: group.owners.size === 1 ? [...group.owners][0] : '', dates: dateEntries.map(entry => entry.date), firstTimestamp: group.firstTimestamp });
                 }
             });
 
@@ -1028,12 +1499,15 @@
                 .sort((a, b) => a.date.getTime() - b.date.getTime())
                 .forEach(item => {
                     const dateLabel = `${item.date.getMonth() + 1}/${item.date.getDate()}(${weekDays[item.date.getDay()]})`;
+                    const owners = [...new Set(item.owners.filter(Boolean))];
+                    const owner = owners.length === 1 ? owners[0] : '';
                     rows.push({
                         ts: item.date.getTime(),
                         html: `
-                        <div class="alert-item">
+                        <div class="alert-item ${owner ? ownerToneClass(owner) : 'tone-neutral'}">
                             <div class="alert-title">
                                 <span class="alert-title-text">${dateLabel}</span>
+                                ${owner ? `<span class="alert-tag">${owner}</span>` : ''}
                             </div>
                             <div class="alert-date-group">${item.titles.join('、')}</div>
                         </div>`
@@ -1049,9 +1523,10 @@
                     rows.push({
                         ts: group.firstTimestamp,
                         html: `
-                        <div class="alert-item">
+                        <div class="alert-item ${group.owner ? ownerToneClass(group.owner) : 'tone-neutral'}">
                             <div class="alert-title">
                                 <span class="alert-title-text">${dateText}</span>
+                                ${group.owner ? `<span class="alert-tag">${group.owner}</span>` : ''}
                             </div>
                             <div class="alert-date-group">${group.title}</div>
                         </div>`
@@ -1083,23 +1558,26 @@
             }
         }
 
-        function getTitleColor(title) {
-            const s = String(title || '').trim().toUpperCase();
-            if (s.startsWith('YW')) return 'linear-gradient(135deg, #f1c40f, #f39c12)';
-            if (s.startsWith('SRL')) return 'linear-gradient(135deg, #e74c3c, #c0392b)';
-            return 'linear-gradient(135deg, #3498db, #2980b9)';
+        function ownerToneClass(owner) {
+            const key = String(owner || '').trim().toLowerCase();
+            if (key === 'gaspar') return 'tone-rust';
+            if (key === 'annie') return 'tone-ochre';
+            if (key === 'candy') return 'tone-moss';
+            if (key === 'yoyopan') return 'tone-ink';
+            return '';
         }
-        function getTitleColorHex(title) {
-            const s = String(title || '').trim().toUpperCase();
-            if (s.startsWith('YW')) return '#f1c40f';
-            if (s.startsWith('SRL')) return '#e74c3c';
-            return '#3498db';
+
+        function eventToneClass(ev) {
+            return ownerToneClass(ev && ev.owner);
         }
 
         function renderCalendar() {
             const year = currentDate.getFullYear(), month = currentDate.getMonth();
             const monthEl = document.getElementById('currentMonth');
-            if (monthEl) monthEl.textContent = `${year}年 ${month + 1}月`;
+            if (monthEl) {
+                monthEl.innerHTML = `<span class="month-year">${year}</span><span class="month-num">${month + 1}</span><span class="month-unit">月</span>`;
+                monthEl.setAttribute('aria-label', `${year}年 ${month + 1}月`);
+            }
             const firstDay = new Date(year, month, 1).getDay();
             const totalDays = new Date(year, month + 1, 0).getDate();
             const prevLastDay = new Date(year, month, 0).getDate();
@@ -1114,6 +1592,8 @@
             }
             const remaining = 42 - container.children.length;
             for (let d = 1; d <= remaining; d++) container.appendChild(createDay(d, year, month + 1, true));
+            const loadEl = document.getElementById('calendarLoading');
+            if (loadEl) loadEl.classList.toggle('show', !calendarDataLoaded);
         }
 
         function createDay(day, year, month, isOther, isToday = false) {
@@ -1132,10 +1612,18 @@
             const showCount = ownerFilter ? (filteredCount > 0 ? filteredCount : '') : (filteredCount > 0 ? totalCount : '');
             el.innerHTML = `
                 <div class="day-number">${day}</div>
-                <div class="events-container">${dayEvents.map(e => `<div class="event" style="background:${getTitleColor(e.title)}">${e.title}</div>`).join('')}</div>
+                <div class="events-container">${dayEvents.map(e => `<div class="event ${eventToneClass(e)}">${e.title}</div>`).join('')}</div>
                 ${showCount !== '' ? `<div class="event-count">${showCount}</div>` : ''}
             `;
+            el.tabIndex = 0;
+            el.setAttribute('aria-label', `${y}年${m + 1}月${day}日，${totalCount} 個日程`);
             el.onclick = () => openDayModal(y, m, day);
+            el.onkeydown = (ev) => {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault();
+                    openDayModal(y, m, day);
+                }
+            };
             return el;
         }
 
@@ -1173,17 +1661,17 @@
             const dayEvents = events[key] ? Object.values(events[key]) : [];
             
             if (dayEvents.length === 0) { 
-                list.innerHTML = '<div class="no-events">📭 沒有日程</div>'; 
+                list.innerHTML = '<div class="no-events">沒有日程</div>'; 
                 return; 
             }
             dayEvents.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
             list.innerHTML = dayEvents.map(e => `
-                <div class="event-item" style="border-left:5px solid ${getTitleColorHex(e.title)};">
+                <div class="event-item ${eventToneClass(e)}">
                     <div class="event-info">
-                        <h4>${e.title}
-                        <span class="owner-badge ${e.owner}">${e.owner}</span></h4>
+                        <h3>${e.title}
+                        <span class="owner-badge ${e.owner}">${e.owner}</span></h3>
                         ${e.description ? `<p>${e.description}</p>` : ''}
-                        ${(e.syllabusRefs && e.syllabusRefs.length) ? `<div class="event-syllabus-tags">${e.syllabusRefs.map(r => `<span class="syl-tag">📚 ${esc(r.schoolName || '')} ${esc(r.className || '')}${r.year ? `（${esc(r.year)}）` : ''}${r.track ? `・${SYL_TRACK_LABELS[r.track] || ''}` : ''}${r.text ? ` · ${esc(r.text)}` : ''}</span>`).join('')}</div>` : ''}
+                        ${(e.syllabusRefs && e.syllabusRefs.length) ? `<div class="event-syllabus-tags">${e.syllabusRefs.map(r => `<span class="syl-tag">${esc(r.schoolName || '')} ${esc(r.className || '')}${r.year ? `（${esc(r.year)}）` : ''}${r.track ? `・${SYL_TRACK_LABELS[r.track] || ''}` : ''}${r.text ? ` · ${esc(r.text)}` : ''}</span>`).join('')}</div>` : ''}
                     </div>
                     <div class="event-actions">
                         <button class="edit-btn" onclick="editEvent('${e.id}')">編輯</button>
@@ -1305,9 +1793,8 @@
             const container = document.getElementById('extracurricularContainer');
             const row = document.createElement('div');
             row.className = 'extra-row';
-            row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px;';
             row.innerHTML = `
-                <select style="flex:0 0 100px; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
+                <select>
                     <option value="Mon">Mon</option>
                     <option value="Tue">Tue</option>
                     <option value="Wed">Wed</option>
@@ -1315,8 +1802,8 @@
                     <option value="Fri">Fri</option>
                     <option value="Sat">Sat</option>
                 </select>
-                <input type="text" placeholder="活動內容" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
-                <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✕</button>
+                <input type="text" placeholder="活動內容">
+                <button type="button" class="btn btn--sm btn--danger" onclick="removeExtraRow(this)">移除</button>
             `;
             container.appendChild(row);
         }
@@ -1348,15 +1835,15 @@
             list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             tbody.innerHTML = list.map(s => `
                 <tr>
-                    <td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold;">${s.chineseName || ''}</td>
-                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.englishName || '-'}</td>
-                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.class || '-'}</td>
-                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.mobile || '-'}</td>
-                    <td style="padding:8px; border-bottom:1px solid #eee; font-size:0.8em;">${(s.availableDays || []).join('、') || '-'}</td>
-                    <td style="padding:8px; border-bottom:1px solid #eee;">${s.retained === 'yes' ? '✅ 留班' + (s.retainedGrade || '') : '❌ 無'}</td>
-                    <td style="padding:8px; border-bottom:1px solid #eee; text-align:center;">
-                        <button class="edit-btn" onclick="editStudent('${s.id}')" style="padding:4px 10px;">編輯</button>
-                        <button class="delete-btn" onclick="deleteStudent('${s.id}')" style="padding:4px 10px;">刪除</button>
+                    <td class="name">${s.chineseName || ''}</td>
+                    <td>${s.englishName || '-'}</td>
+                    <td>${s.class || '-'}</td>
+                    <td class="num">${s.mobile || '-'}</td>
+                    <td>${(s.availableDays || []).join('、') || '-'}</td>
+                    <td>${s.retained === 'yes' ? '留班' + (s.retainedGrade || '') : '無'}</td>
+                    <td>
+                        <button class="edit-btn" onclick="editStudent('${s.id}')">編輯</button>
+                        <button class="delete-btn" onclick="deleteStudent('${s.id}')">刪除</button>
                     </td>
                 </tr>
             `).join('');
@@ -1447,9 +1934,8 @@
             extras.forEach(ex => {
                 const row = document.createElement('div');
                 row.className = 'extra-row';
-                row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px;';
                 row.innerHTML = `
-                    <select style="flex:0 0 100px; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
+                    <select>
                         <option value="Mon"${ex.day === 'Mon' || ex.day === '星期一' ? ' selected' : ''}>Mon</option>
                         <option value="Tue"${ex.day === 'Tue' || ex.day === '星期二' ? ' selected' : ''}>Tue</option>
                         <option value="Wed"${ex.day === 'Wed' || ex.day === '星期三' ? ' selected' : ''}>Wed</option>
@@ -1457,8 +1943,8 @@
                         <option value="Fri"${ex.day === 'Fri' || ex.day === '星期五' ? ' selected' : ''}>Fri</option>
                         <option value="Sat"${ex.day === 'Sat' || ex.day === '星期六' ? ' selected' : ''}>Sat</option>
                     </select>
-                    <input type="text" placeholder="活動內容" value="${ex.content || ''}" style="flex:1; padding:8px; border:2px solid #e0e0e0; border-radius:8px;">
-                    <button type="button" onclick="removeExtraRow(this)" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✕</button>
+                    <input type="text" placeholder="活動內容" value="${ex.content || ''}">
+                    <button type="button" class="btn btn--sm btn--danger" onclick="removeExtraRow(this)">移除</button>
                 `;
                 container.appendChild(row);
             });
@@ -1489,7 +1975,7 @@
                 return;
             }
             if (!confirm(`確定要清空全部 ${count} 筆學生資料嗎？`)) return;
-            if (!confirm('⚠️ 最後確認：此操作會永久刪除所有學生報名資料，無法復原！')) return;
+            if (!confirm('最後確認：此操作會永久刪除所有學生報名資料，無法復原！')) return;
             studentsRef.remove()
                 .then(() => showToast('已清空所有學生資料', 'success'))
                 .catch((err) => {
@@ -2199,7 +2685,7 @@
             if (!el) return;
             const schools = sortedSchools();
             if (!schools.length) {
-                el.innerHTML = '<div class="tree-empty">尚未新增學校<br>按「➕ 新增學校」開始</div>';
+                el.innerHTML = '<div class="tree-empty">尚未新增學校<br>按「新增學校」開始</div>';
                 return;
             }
             el.innerHTML = schools.map(s => {
@@ -2215,19 +2701,19 @@
                     const title = years.length ? `學年：${years.join('、')}` : '未加入任何學年';
                     return `
                     <div class="tree-class ${syllabusSel.classId === c.id ? 'active' : ''}" title="${esc(title)}" onclick="selectSyllabusClass('${s.id}','${c.id}')">
-                        <span>📄 ${esc(c.name)}${badge}</span>
+                        <span>${esc(c.name)}${badge}</span>
                         <span class="tree-actions">
-                            <button type="button" onclick="renameClass('${s.id}','${c.id}',event)" title="重新命名">✎</button>
-                            <button type="button" onclick="deleteClass('${s.id}','${c.id}',event)" title="刪除班級">🗑</button>
+                            <button type="button" onclick="renameClass('${s.id}','${c.id}',event)" title="重新命名">改</button>
+                            <button type="button" class="del" onclick="deleteClass('${s.id}','${c.id}',event)" title="刪除班級">刪</button>
                         </span>
                     </div>`;
                 }).join('') : `<div class="tree-hint">（未新增班級）</div>`;
                 return `<div class="tree-school">
                     <div class="tree-school-head ${isOpen ? 'active' : ''}" onclick="selectSyllabusSchool('${s.id}')">
-                        <span>🏫 ${esc(s.name)}</span>
+                        <span>${esc(s.name)}</span>
                         <span class="tree-actions">
-                            <button type="button" onclick="renameSchool('${s.id}',event)" title="重新命名">✎</button>
-                            <button type="button" onclick="deleteSchool('${s.id}',event)" title="刪除學校">🗑</button>
+                            <button type="button" onclick="renameSchool('${s.id}',event)" title="重新命名">改</button>
+                            <button type="button" class="del" onclick="deleteSchool('${s.id}',event)" title="刪除學校">刪</button>
                         </span>
                     </div>
                     ${isOpen ? classHtml : ''}
@@ -2315,7 +2801,7 @@
                 list.innerHTML = years.map(y => {
                     const has = cls ? classYears(cls).includes(y) : false;
                     return `<button type="button" class="syl-year-option" ${has ? 'disabled' : ''}
-                        onclick="pickSyllabusYear('${y}')">${has ? '✓ ' : '＋ '}${esc(y)}${has ? '（已加入）' : ''}</button>`;
+                        onclick="pickSyllabusYear('${y}')">${esc(y)}${has ? '（已加入）' : ''}</button>`;
                 }).join('');
             }
             const input = document.getElementById('sylYearNewInput');
@@ -2507,10 +2993,10 @@
                         ${it.note ? `<div class="syl-item-note">${esc(it.note)}</div>` : ''}
                     </div>
                     <div class="syl-item-actions">
-                        <button type="button" onclick="moveSyllabusItem('${it.id}',-1)" title="上移">↑</button>
-                        <button type="button" onclick="moveSyllabusItem('${it.id}',1)" title="下移">↓</button>
-                        <button type="button" onclick="editSyllabusItem('${it.id}')" title="編輯">✎</button>
-                        <button type="button" class="del" onclick="deleteSyllabusItem('${it.id}')" title="刪除">🗑</button>
+                        <button type="button" onclick="moveSyllabusItem('${it.id}',-1)" title="上移">上</button>
+                        <button type="button" onclick="moveSyllabusItem('${it.id}',1)" title="下移">下</button>
+                        <button type="button" onclick="editSyllabusItem('${it.id}')" title="編輯">改</button>
+                        <button type="button" class="del" onclick="deleteSyllabusItem('${it.id}')" title="刪除">刪</button>
                     </div>
                 </div>`;
         }
@@ -2523,20 +3009,20 @@
             const years = classYears(cls);
             const cur = syllabusYearFilter;
             const joined = years.includes(cur);
-            let html = '<span class="syl-year-label">📅 學年：</span>';
+            let html = '<span class="syl-year-label">學年：</span>';
             if (years.length) {
                 html += years.map(y =>
                     `<button type="button" class="syl-year-chip ${y === cur ? 'active' : ''}" onclick="switchClassYear('${y}')">${esc(y)}</button>`
                 ).join('');
                 if (!joined) {
-                    html += `<button type="button" class="syl-year-chip add" onclick="addYearToOpenClass()">＋ 加入 ${esc(cur)}</button>`;
+                    html += `<button type="button" class="syl-year-chip add" onclick="addYearToOpenClass()">加入 ${esc(cur)}</button>`;
                 }
             } else {
                 html += `<span class="syl-year-none">此班級未加入任何學年</span>`;
             }
-            html += `<button type="button" class="syl-year-chip add" onclick="addYearToOpenClass()">＋ 加入／新增學年</button>`;
+            html += `<button type="button" class="syl-year-chip add" onclick="addYearToOpenClass()">加入／新增學年</button>`;
             if (joined) {
-                html += `<button type="button" class="syl-year-chip del" onclick="removeYearFromOpenClass()" title="移除此學年的 Syllabus">🗑 移除此學年</button>`;
+                html += `<button type="button" class="syl-year-chip del" onclick="removeYearFromOpenClass()" title="移除此學年的 Syllabus">移除此學年</button>`;
             }
             bar.innerHTML = html;
         }
@@ -2566,12 +3052,12 @@
             const isDouble = isDoubleLayoutSchool(school);
             if (formEl) formEl.style.display = joined ? 'flex' : 'none';
             if (trackSel) trackSel.style.display = (joined && isDouble) ? 'inline-block' : 'none';
-            titleEl.textContent = `🏫 ${school.name} → 📄 ${cls.name}（${year}）${isDouble ? '・雙列' : ''}`;
+            titleEl.textContent = `${school.name} → ${cls.name}（${year}）${isDouble ? '・雙列' : ''}`;
             if (!joined) {
                 box.innerHTML = '';
                 if (emptyEl) {
                     emptyEl.style.display = 'block';
-                    emptyEl.innerHTML = `此班級未加入 ${esc(year)} 學年。按上方「＋ 加入 ${esc(year)}」或「＋ 加入／新增學年」即可開始編輯。`;
+                    emptyEl.innerHTML = `此班級未加入 ${esc(year)} 學年。按上方「加入 ${esc(year)}」或「加入／新增學年」即可開始編輯。`;
                 }
                 return;
             }
@@ -2584,7 +3070,7 @@
                 box.innerHTML = '';
                 if (emptyEl) {
                     emptyEl.style.display = 'block';
-                    emptyEl.textContent = q ? '沒有符合搜尋的項目' : `${year} 學年未有 Syllabus 項目，可按「📤 貼上匯入」批量加入`;
+                    emptyEl.textContent = q ? '沒有符合搜尋的項目' : `${year} 學年未有 Syllabus 項目，可按「貼上匯入」批量加入`;
                 }
                 return;
             }
@@ -2594,7 +3080,7 @@
                     const colItems = list.filter(it => itemTrack(it) === t);
                     return `<div class="syl-column">
                         <div class="syl-column-head">
-                            <span>📑 ${SYL_TRACK_LABELS[t]}</span>
+                            <span>${SYL_TRACK_LABELS[t]}</span>
                             <span class="syl-count">${colItems.length} 項</span>
                         </div>
                         ${colItems.length
@@ -2649,7 +3135,7 @@
                 const trackEl = document.getElementById('syllabusItemTrack');
                 if (trackEl) trackEl.value = String(itemTrack(item));
             }
-            document.getElementById('syllabusSaveBtn').textContent = '💾 保存';
+            document.getElementById('syllabusSaveBtn').textContent = '保存';
             document.getElementById('syllabusCancelBtn').style.display = 'inline-block';
             document.getElementById('syllabusItemText').focus();
         }
@@ -2662,7 +3148,7 @@
             if (n) n.value = '';
             const saveBtn = document.getElementById('syllabusSaveBtn');
             const cancelBtn = document.getElementById('syllabusCancelBtn');
-            if (saveBtn) saveBtn.textContent = '➕ 新增';
+            if (saveBtn) saveBtn.textContent = '新增';
             if (cancelBtn) cancelBtn.style.display = 'none';
         }
 
@@ -2748,7 +3234,7 @@
                 pasteTrackSel.value = (isDouble && formTrack) ? formTrack.value : '1';
             }
             document.getElementById('pasteTargetLabel').textContent =
-                `匯入目標：🏫 ${school ? school.name : ''} → 📄 ${cls ? cls.name : ''}（${pasteTarget.year}）` +
+                `匯入目標：${school ? school.name : ''} → ${cls ? cls.name : ''}（${pasteTarget.year}）` +
                 `　現有 ${classItems(pasteTarget.schoolId, pasteTarget.classId, pasteTarget.year).length} 項`;
             const area = document.getElementById('syllabusPasteArea');
             area.value = typeof prefill === 'string' ? prefill : '';
@@ -2829,7 +3315,7 @@
             if (!table) return;
             const items = collectPasteItems();
             if (!pasteRows.length) {
-                table.innerHTML = '<tbody><tr><td class="idx">—</td><td style="color:#999;padding:12px;">尚未貼上任何內容</td></tr></tbody>';
+                table.innerHTML = '<tbody><tr><td class="idx">—</td><td class="paste-empty">尚未貼上任何內容</td></tr></tbody>';
                 if (summary) summary.textContent = '';
                 return;
             }
@@ -3185,7 +3671,7 @@
                 return;
             }
             if (!year) {
-                box.innerHTML = '<div class="syl-empty">此班級未加入任何學年，請先到「📚 Syllabus」加入學年</div>';
+                box.innerHTML = '<div class="syl-empty">此班級未加入任何學年，請先到「Syllabus」加入學年</div>';
                 renderEventSyllabusChips();
                 return;
             }
@@ -3207,7 +3693,7 @@
             if (isDoubleLayoutSchool(getSchool(sid))) {
                 box.innerHTML = [1, 2].map(t => {
                     const list = items.filter(it => itemTrack(it) === t);
-                    const head = `<div class="syl-track-head">📑 ${SYL_TRACK_LABELS[t]}</div>`;
+                    const head = `<div class="syl-track-head">${SYL_TRACK_LABELS[t]}</div>`;
                     return head + (list.length
                         ? list.map(makeCheckbox).join('')
                         : '<div class="syl-empty">此列未有項目</div>');
@@ -3248,8 +3734,8 @@
             if (!box) return;
             if (!eventSyllabusRefs.length) { box.innerHTML = ''; return; }
             box.innerHTML = eventSyllabusRefs.map((r, i) => `
-                <span class="syl-chip">📚 ${esc(r.schoolName || '')} ${esc(r.className || '')}${r.year ? `（${esc(r.year)}）` : ''}${r.track ? `・${SYL_TRACK_LABELS[r.track] || ''}` : ''} · ${esc(r.text || '')}
-                    <button type="button" onclick="removeEventSyllabusRef(${i})" title="移除">✕</button>
+                <span class="syl-chip">${esc(r.schoolName || '')} ${esc(r.className || '')}${r.year ? `（${esc(r.year)}）` : ''}${r.track ? `・${SYL_TRACK_LABELS[r.track] || ''}` : ''} · ${esc(r.text || '')}
+                    <button type="button" onclick="removeEventSyllabusRef(${i})" title="移除">移除</button>
                 </span>`).join('');
         }
 
@@ -3267,6 +3753,31 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
+
+        function applyTheme(dayMode) {
+            const root = document.documentElement;
+            if (dayMode) root.setAttribute('data-theme', 'day');
+            else root.removeAttribute('data-theme');
+            const btn = document.getElementById('themeToggle');
+            if (btn) {
+                btn.textContent = dayMode ? '黑夜' : '白天';
+                btn.setAttribute('aria-label', dayMode ? '切換至黑夜模式' : '切換至白天模式');
+            }
+        }
+
+        function toggleTheme() {
+            const dayMode = document.documentElement.getAttribute('data-theme') !== 'day';
+            applyTheme(dayMode);
+            try {
+                localStorage.setItem('tutoring-theme', dayMode ? 'day' : 'night');
+            } catch (e) { /* storage may be unavailable */ }
+        }
+
+        (function initTheme() {
+            let saved = null;
+            try { saved = localStorage.getItem('tutoring-theme'); } catch (e) { /* ignore */ }
+            applyTheme(saved === 'day');
+        })();
     </script>
 </body>
 </html>
