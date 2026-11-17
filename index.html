@@ -22,6 +22,7 @@
          * axes: dark + day toggle/geometric-sans/chromatic-185 · posture: restrained · contrast: pass · v2.1.0
          * finish-review: subagent · 6 findings · 5 resolved, 1 rejected (mobile now prints titles, 2 per cell with +N; tap-for-detail kept) · gap: none */
         /* Hallmark · dropped "222526" · stale pre-redesign figure: the live register now renders 232526 from the same day/count digit run, and the pre-redesign backup does the same, so no page content was lost */
+        /* Hallmark · reworded "21131415161718" to "211314151617" · kept gate: the mobile grid now prints schedule titles between the day numbers, so that digit run splits before 18 */
         /* Hallmark · pre-emit critique: P4 H4 E5 S4 R4 · weakest: S, ordinary enough to read as a real staff tool; the register rules, mono figures and marker-ink owner tones do the work instead of a cyberpunk prop kit */
 
         :root {
@@ -519,7 +520,7 @@
             font-size: var(--text-xs); cursor: pointer;
             transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
         }
-        .edit-btn:hover { background: var(--color-paper-2); color: var(--color-accent); border-color: var(--color-accent); }
+        .copy-btn:hover, .edit-btn:hover { background: var(--color-paper-2); color: var(--color-accent); border-color: var(--color-accent); }
         .event-actions button.delete-btn, .delete-btn { color: var(--color-error); border-color: var(--color-error); }
         .delete-btn:hover { background: var(--color-error); color: var(--color-accent-ink); }
         .owner-badge {
@@ -810,6 +811,7 @@
                 box-shadow: inset 2px 0 0 color-mix(in oklab, var(--tone, var(--color-muted)) 45%, transparent);
             }
             .event:nth-child(n+3) { display: none; }
+            .event-actions button { padding: var(--space-3xs) var(--space-2xs); }
             .event-count { display: none; }
             .event-more {
                 display: block; padding-left: var(--space-2xs);
@@ -1697,6 +1699,7 @@
                         ${(e.syllabusRefs && e.syllabusRefs.length) ? `<div class="event-syllabus-tags">${e.syllabusRefs.map(r => `<span class="syl-tag">${esc(r.schoolName || '')} ${esc(r.className || '')}${r.year ? `（${esc(r.year)}）` : ''}${r.track ? `・${SYL_TRACK_LABELS[r.track] || ''}` : ''}${r.text ? ` · ${esc(r.text)}` : ''}</span>`).join('')}</div>` : ''}
                     </div>
                     <div class="event-actions">
+                        <button class="copy-btn" onclick="copyEvent('${e.id}')">複製</button>
                         <button class="edit-btn" onclick="editEvent('${e.id}')">編輯</button>
                         <button class="delete-btn" onclick="deleteEvent('${e.id}')">刪除</button>
                     </div>
@@ -1773,6 +1776,64 @@
                         showToast('刪除失敗，請檢查網路', 'error');
                     }
                 });
+        }
+
+        // 單筆 Syllabus 引用的可讀文字（與列表 chip 格式一致）
+        function syllabusRefText(r) {
+            const head = [r.schoolName, r.className].filter(Boolean).join(' ');
+            const year = r.year ? `（${r.year}）` : '';
+            const track = r.track ? `・${SYL_TRACK_LABELS[r.track] || ''}` : '';
+            const text = (r.text || '').trim() ? ` · ${r.text.trim()}` : '';
+            return (head + year + track + text).trim();
+        }
+
+        // 複製內容：標題、對應 Syllabus、備註；空白的部分不輸出
+        function eventCopyText(ev) {
+            const lines = [];
+            const title = (ev.title || '').trim();
+            if (title) lines.push(title);
+            (ev.syllabusRefs || []).forEach(r => {
+                const label = syllabusRefText(r);
+                if (label) lines.push(`Syllabus：${label}`);
+            });
+            const note = (ev.description || '').trim();
+            if (note) lines.push(`備註：${note}`);
+            return lines.join('\n');
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-1000px';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+            document.body.removeChild(ta);
+            return ok;
+        }
+
+        function copyEvent(id) {
+            if (!selectedDate) return;
+            const key = `${selectedDate.year}-${String(selectedDate.month+1).padStart(2,'0')}-${String(selectedDate.day).padStart(2,'0')}`;
+            const ev = events[key] && events[key][id];
+            if (!ev) { showToast('找不到此日程', 'error'); return; }
+
+            const text = eventCopyText(ev);
+            if (!text) { showToast('此日程沒有可複製的內容', 'error'); return; }
+
+            const ok = () => showToast('已複製日程', 'success');
+            const fail = () => showToast('複製失敗，請手動選取文字', 'error');
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(ok)
+                    .catch(() => (fallbackCopy(text) ? ok() : fail()));
+            } else {
+                fallbackCopy(text) ? ok() : fail();
+            }
         }
 
         // ========== 學生報名功能 ==========
