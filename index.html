@@ -19,7 +19,7 @@
         /* Hallmark · shape: app screen · genre: atmospheric · theme: custom — night-shift staff room (by request, after a de-slop audit) · redesign: full
          * nav: a top bar over one rule, wordmark, grouped month stepper and a day/night switch above the actions · signature: a printed staff-room register — warm paper ink on a green-black plate, one fluorescent signal, owner inks like marker pens
          * states: loading, empty, full, offline, editing, disabled, day mode, night mode · material: no grid, no glow, no offset shadows, no neon rainbow; one phosphor green, calendar B printed in white, Noto Sans TC over Onest
-         * axes: dark + day toggle/geometric-sans/chromatic-185 · posture: restrained · contrast: pass · v2.1.0
+         * axes: dark + day toggle/geometric-sans/chromatic-185 · posture: restrained · contrast: pass · v2.2.0
          * finish-review: subagent · 6 findings · 5 resolved, 1 rejected (mobile now prints titles, 2 per cell with +N; tap-for-detail kept) · gap: none */
         /* Hallmark · dropped "222526" · stale pre-redesign figure: the live register now renders 232526 from the same day/count digit run, and the pre-redesign backup does the same, so no page content was lost */
         /* Hallmark · reworded "21131415161718" to "211314151617" · kept gate: the mobile grid now prints schedule titles between the day numbers, so that digit run splits before 18 */
@@ -398,6 +398,8 @@
         .modal-content--md { max-width: 600px; }
         .modal-content--wide { max-width: 900px; }
         .modal-content--xl { max-width: 1080px; }
+        /* 當天日程：闊度跟視窗放大，高度最多 88% 視窗，內容多時內部滾動 */
+        .modal-content--day { width: 100%; max-width: min(880px, 92vw); max-height: 88dvh; }
         .modal-header {
             display: flex; justify-content: space-between; align-items: flex-start;
             gap: var(--space-sm);
@@ -827,6 +829,7 @@
             .nav-buttons .switch-calendar-btn { grid-column: span 2; }
             .nav-btn { min-height: 38px; padding: var(--space-2xs) var(--space-2xs); }
             .modal-content { padding: var(--space-sm); }
+            .modal-content--day { max-width: 100%; max-height: 92dvh; }
             .syl-columns { grid-template-columns: 1fr; }
             .syl-item-actions { flex-direction: column; }
         }
@@ -898,7 +901,7 @@
     </div>
 
     <div class="modal" id="dayModal">
-        <div class="modal-content">
+        <div class="modal-content modal-content--day">
             <div class="modal-header">
                 <h2 id="modalDate"></h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
