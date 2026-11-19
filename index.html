@@ -305,7 +305,7 @@
             font-size: var(--text-2xs); line-height: 1.35;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             color: var(--color-ink);
-            background: color-mix(in oklab, var(--tone, var(--color-muted)) 22%, var(--color-plate));
+            background: color-mix(in oklab, var(--tone, var(--color-muted)) 30%, var(--color-plate));
             border: 0; box-shadow: inset 3px 0 0 var(--tone, var(--color-muted));
         }
         .event-count {
@@ -320,7 +320,7 @@
         /* next month's entries sit behind the page in hand */
         .day.other-month .event {
             color: var(--color-muted);
-            background: color-mix(in oklab, var(--tone, var(--color-muted)) 11%, var(--color-paper));
+            background: color-mix(in oklab, var(--tone, var(--color-muted)) 14%, var(--color-paper));
             box-shadow: inset 3px 0 0 color-mix(in oklab, var(--tone, var(--color-muted)) 45%, transparent);
         }
         .day.other-month .event-count { opacity: 0.45; }
@@ -802,12 +802,12 @@
                 font-size: var(--text-2xs); line-height: 1.3;
                 white-space: normal; overflow: hidden; overflow-wrap: anywhere;
                 display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-                background: color-mix(in oklab, var(--tone, var(--color-muted)) 16%, var(--color-plate));
+                background: color-mix(in oklab, var(--tone, var(--color-muted)) 28%, var(--color-plate));
                 box-shadow: inset 2px 0 0 var(--tone, var(--color-muted));
                 border: 0;
             }
             .day.other-month .event {
-                background: color-mix(in oklab, var(--tone, var(--color-muted)) 8%, var(--color-paper));
+                background: color-mix(in oklab, var(--tone, var(--color-muted)) 13%, var(--color-paper));
                 box-shadow: inset 2px 0 0 color-mix(in oklab, var(--tone, var(--color-muted)) 45%, transparent);
             }
             .event:nth-child(n+3) { display: none; }
@@ -1591,8 +1591,12 @@
             return '';
         }
 
+        // 日程顏色跟標題字首：YW＝黃、SRL＝紅、其他＝藍（回復原有識別）
         function eventToneClass(ev) {
-            return ownerToneClass(ev && ev.owner);
+            const title = String((ev && ev.title) || '').trim().toUpperCase();
+            if (title.startsWith('YW')) return 'tone-ochre';
+            if (title.startsWith('SRL')) return 'tone-rust';
+            return 'tone-ink';
         }
 
         function renderCalendar() {
